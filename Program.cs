@@ -1,8 +1,11 @@
-﻿internal static class Program
+﻿using CourseManagement;
+
+static class Program
 {
     static void Main()
     {
-        PersonTest.Run();
+        CourseManager.Run();
+        // PersonTest.Run();
     }
 
 }
