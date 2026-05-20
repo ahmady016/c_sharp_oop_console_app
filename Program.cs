@@ -4,7 +4,7 @@ static class Program
 {
     static void Main()
     {
-        CourseManager.Run();
+        // CourseManager.Run();
         // PersonTest.Run();
     }
 

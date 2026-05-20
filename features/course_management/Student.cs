@@ -24,7 +24,7 @@ public class Student : Person
         if(score < 0.0 || score > 100.0)
             throw new ArgumentException("Invalid score.");
         if(_completedCourses.ContainsKey(courseId))
-            throw new ArgumentException($"Course with Id {courseId} has already been completed.");
+            throw new ArgumentException($"{FullName} has already completed {courseTitle}.");
 
         string grade = score switch
         {
