@@ -1,10 +1,9 @@
-﻿using CourseManagement;
-
-static class Program
+﻿static class Program
 {
-    static void Main()
+    static async Task Main()
     {
-        // CourseManager.Run();
+        await BooksStore.BooksStoreManager.Run();
+        // CourseManagement.CourseManager.Run();
         // PersonTest.Run();
     }
 
