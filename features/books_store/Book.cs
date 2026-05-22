@@ -1,4 +1,5 @@
 namespace BooksStore;
+
 public class Book
 {
     private readonly string _id;
@@ -14,6 +15,7 @@ public class Book
     public string Title => _title;
     public string SubTitle => _subTitle;
     public string Authors => string.Join(", ", _authors);
+    public IReadOnlyList<string> AuthorsList => _authors;
     public string Publisher => _publisher;
     public int PublishedYear => _publishedYear;
     public int Pages => _pages;
