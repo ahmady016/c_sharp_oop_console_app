@@ -3,103 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace HotelManagement;
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum HotelType : byte
-{
-    [JsonStringEnumMemberName("resort")]
-    Resort = 1,
-    [JsonStringEnumMemberName("hotel")]
-    Hotel = 2,
-    [JsonStringEnumMemberName("boutique")]
-    Boutique = 3,
-    [JsonStringEnumMemberName("economy")]
-    Economy = 4
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum HotelTier : byte
-{
-    [JsonStringEnumMemberName("none")]
-    None = 0,
-    [JsonStringEnumMemberName("bronze")]
-    Bronze = 1,
-    [JsonStringEnumMemberName("silver")]
-    Silver = 2,
-    [JsonStringEnumMemberName("gold")]
-    Gold = 3,
-    [JsonStringEnumMemberName("platinum")]
-    Platinum = 4
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum HotelRoomType : byte
-{
-    [JsonStringEnumMemberName("single")]
-    Single = 1,
-    [JsonStringEnumMemberName("double")]
-    Double = 2,
-    [JsonStringEnumMemberName("suite")]
-    Suite = 3,
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum CheckedStatus : byte
-{
-    [JsonStringEnumMemberName("none")]
-    None = 0,
-    [JsonStringEnumMemberName("checkedin")]
-    CheckedIn = 1,
-    [JsonStringEnumMemberName("checkedout")]
-    CheckedOut = 2,
-}
-
-public record RankingWeights
-(
-    int NightWeight,
-    int SpentDivider
-);
-public record HotelRoom
-(
-    int RoomNumber,
-    double PricePerNight,
-    HotelRoomType Type = HotelRoomType.Single,
-    bool IsEmpty = true
-);
-public record HotelGuest
-(
-    Guest Guest,
-    int TotalNights,
-    double TotalSpent,
-    int Score,
-    HotelTier Tier
-);
-public record HotelBooking
-(
-    string Id,
-    Guest Guest,
-    int RoomNumber,
-    DateTime CheckInDate,
-    double Spent,
-    int Nights = 1,
-    DateTime? CheckOutDate = null,
-    CheckedStatus Status = CheckedStatus.CheckedIn
-);
-public record HotelGuestHistory
-(
-    Guest Guest,
-    int TotalNights,
-    double TotalSpent,
-    int Score,
-    HotelTier Tier,
-    CheckedStatus CurrentStatus,
-    int TotalBookings,
-    IEnumerable<HotelBooking> Bookings
-)
-{
-    public override string ToString() =>
-        $"{Guest.FullName} is a {Guest.Gender} guest, stayed for ({TotalNights}) nights, spent $({TotalSpent:F2}), scored ({Score}), belongs to the [{Tier}] tier, has ({TotalBookings}) bookings and Current status: {CurrentStatus}.";
-}
-
 public class Hotel : ICloneable
 {
     #region Static Fields used for calculate guest score and tier
@@ -137,36 +40,51 @@ public class Hotel : ICloneable
     private readonly string _location;
     private readonly int _capacity;
     private readonly HotelType _type;
-    private readonly Dictionary<int, HotelRoom> _rooms = [];
-    private readonly Dictionary<string, HotelBooking> _bookings = [];
-    private readonly Dictionary<string, HotelGuest> _guests = [];
+    private readonly Dictionary<int, HotelRoom> _roomsMap = [];
+    private readonly Dictionary<string, HotelGuest> _guestsMap = [];
+    private readonly Dictionary<string, HotelBooking> _bookingsMap = [];
     #endregion
 
     #region public state Properties
-    // public readonly (getter only) properties
+    // public readonly (getter only) properties and initializing set on object creation only
     public string Id => _id;
     public string Name => _name;
     public string Location => _location;
     public int Capacity => _capacity;
     public HotelType Type => _type;
-    public IReadOnlyList<HotelRoom> Rooms => [.._rooms.Values];
+    public IReadOnlyList<HotelRoom> Rooms
+    {
+        get => [..
+            from room in _roomsMap.Values
+            orderby room.RoomNumber ascending
+            select room
+        ];
+        init => _roomsMap = value.ToDictionary(room => room.RoomNumber);
+    }
+    public IReadOnlyList<HotelGuest> Guests
+    {
+        get => [..
+            from guest in _guestsMap.Values
+            orderby guest.Score descending
+            select guest
+        ];
+        init => _guestsMap = value.ToDictionary(hGuest => hGuest.Guest.Id);
+    }
+    public IReadOnlyList<HotelBooking> Bookings
+    {
+        get => [..
+            from booking in _bookingsMap.Values
+            orderby booking.CheckInDate descending
+            select booking
+        ];
+        init => _bookingsMap = value.ToDictionary(booking => booking.Id);
+    }
     #endregion
 
     #region public computed getter only Properties
     // public aggregations properties to
-    // get all hotel bookings ordered by check-in date
-    public IReadOnlyList<HotelBooking> Bookings => [..
-        from booking in _bookings.Values
-        orderby booking.CheckInDate descending
-        select booking
-    ];
-    // get all hotel guests ordered by score
-    public IReadOnlyList<HotelGuest> Guests => [..
-        from guest in _guests.Values
-        orderby guest.Score descending
-        select guest
-    ];
     // get the all the hotel guests history ordered by score
+    [JsonIgnore]
     public IReadOnlyList<HotelGuestHistory> GuestsHistory => [..
         from guest in Guests
         let guestBookings = from booking in Bookings
@@ -185,7 +103,15 @@ public class Hotel : ICloneable
             Bookings: guestBookings
         )
     ];
+    // get the unique guests who have stayed at the hotel ordered by latest check-in date
+    [JsonIgnore]
+    public HashSet<Guest> GuestsSet => [..
+        from booking in Bookings
+        orderby booking.CheckInDate descending
+        select booking.Guest
+    ];
     // get only the guests who are checked-out at the hotel
+    [JsonIgnore]
     public IReadOnlyList<Guest> PastGuests => [..
         from guestHistory in GuestsHistory
         where guestHistory.CurrentStatus == CheckedStatus.CheckedOut
@@ -193,14 +119,46 @@ public class Hotel : ICloneable
         select guestHistory.Guest
     ];
     // get only the guests who are still checked-in at the hotel
+    [JsonIgnore]
     public IReadOnlyList<Guest> CurrentGuests => [..
         from guestHistory in GuestsHistory
         where guestHistory.CurrentStatus == CheckedStatus.CheckedIn
         orderby guestHistory.Score descending
         select guestHistory.Guest
     ];
+    // get the expired bookings in hotel along with its expiration dates string
+    [JsonIgnore]
+    public KeyValuePair<string, HotelBooking>[] ExpiredBookings => [..
+        from booking in Bookings
+        let expiredDate = booking.CheckInDate.AddDays(booking.Nights)
+        where DateTime.Now > expiredDate && booking.Status == CheckedStatus.CheckedIn
+        select KeyValuePair.Create(expiredDate.ToString("yyyy-MM-dd"), booking)
+    ];
+    // get the current checked-in bookings along with its checked-in dates
+    [JsonIgnore]
+    public KeyValuePair<string, HotelBooking>[] CurrentBookings => [..
+        from booking in Bookings
+        let expiredDate = booking.CheckInDate.AddDays(booking.Nights)
+        where DateTime.Now <= expiredDate && booking.Status == CheckedStatus.CheckedIn
+        select KeyValuePair.Create(booking.CheckInDate.ToString("yyyy-MM-dd"), booking)
+    ];
+    // get the completed bookings along with its checked-in dates
+    [JsonIgnore]
+    public KeyValuePair<string, HotelBooking>[] CompletedBookings => [..
+        from booking in Bookings
+        where booking.Status == CheckedStatus.CheckedOut
+        select KeyValuePair.Create(booking.CheckInDate.ToString("yyyy-MM-dd"), booking)
+    ];
+    // calculate the total number of available rooms and occupied rooms
+    [JsonIgnore]
+    public IReadOnlyList<HotelRoom> AvailableRooms =>
+        [..from room in Rooms where room.IsEmpty select room];
+    [JsonIgnore]
+    public IReadOnlyList<HotelRoom> OccupiedRooms =>
+        [..from room in Rooms where !room.IsEmpty select room];
+
     // get the guests counter by each tier in the hotel
-    public FrozenDictionary<string, int> TierCounter => Guests.Aggregate(
+    public FrozenDictionary<string, int> TierGuestsCounter => Guests.Aggregate(
         (
             from tier in Enum.GetValues<HotelTier>()
             where tier != HotelTier.None
@@ -212,37 +170,36 @@ public class Hotel : ICloneable
         },
         dict => dict.ToFrozenDictionary()
     );
-    // get the unique guests who have stayed at the hotel ordered by latest check-in date
-    public HashSet<Guest> GuestsSet => [..
-        from booking in Bookings
-        orderby booking.CheckInDate descending
-        select booking.Guest
-    ];
-    // get the expired bookings in hotel along with its expiration dates string
-    public KeyValuePair<string, HotelBooking>[] ExpiredBookings => [..
-        from booking in Bookings
-        let expiredDate = booking.CheckInDate.AddDays(booking.Nights)
-        where DateTime.Now > expiredDate && booking.Status == CheckedStatus.CheckedIn
-        select KeyValuePair.Create(expiredDate.ToString("yyyy-MM-dd"), booking)
-    ];
-    // get the current checked-in bookings along with its checked-in dates
-    public KeyValuePair<string, HotelBooking>[] CurrentBookings => [..
-        from booking in Bookings
-        let expiredDate = booking.CheckInDate.AddDays(booking.Nights)
-        where DateTime.Now <= expiredDate && booking.Status == CheckedStatus.CheckedIn
-        select KeyValuePair.Create(booking.CheckInDate.ToString("yyyy-MM-dd"), booking)
-    ];
-    // get the completed bookings along with its checked-in dates
-    public KeyValuePair<string, HotelBooking>[] CompletedBookings => [..
-        from booking in Bookings
-        where booking.Status == CheckedStatus.CheckedOut
-        select KeyValuePair.Create(booking.CheckInDate.ToString("yyyy-MM-dd"), booking)
-    ];
-    // calculate the total number of available rooms and occupied rooms
-    public IReadOnlyList<HotelRoom> AvailableRooms =>
-        [..from room in Rooms where room.IsEmpty select room];
-    public IReadOnlyList<HotelRoom> OccupiedRooms =>
-        [..from room in Rooms where !room.IsEmpty select room];
+    // get the bookings counter by each guest in the hotel
+    public FrozenDictionary<string, int> GuestBookingsCounter => Bookings.Aggregate(
+        (from guest in Guests select KeyValuePair.Create(guest.Guest.Id, 0))
+        .ToDictionary(kv => kv.Key, kv => kv.Value),
+        (dict, booking) => {
+            dict[booking.Guest.Id]++;
+            return dict;
+        },
+        dict => dict.ToFrozenDictionary()
+    );
+    // calculate the total number of guests in the hotel
+    public int TotalGuests => Guests.Count;
+    // get the total number of current guests
+    public int CurrentGuestsCount => CurrentGuests.Count;
+    // get the total number of leaved guests
+    public int PastGuestsCount => PastGuests.Count;
+    // get the total number of rooms
+    public int TotalRooms => Rooms.Count;
+    // get the total number of available rooms
+    public int AvailableRoomsCount => AvailableRooms.Count;
+    // get the total number of occupied rooms
+    public int OccupiedRoomsCount => OccupiedRooms.Count;
+    // get the total number of bookings in the hotel
+    public int TotalBookings => Bookings.Count;
+    // get the total number of current bookings
+    public int CurrentBookingsCount => CurrentBookings.Length;
+    // get the total number of completed bookings
+    public int CompletedBookingsCount => CompletedBookings.Length;
+    // get the total number of expired bookings
+    public int ExpiredBookingsCount => ExpiredBookings.Length;
     // calculate the total number of nights stayed by all guests at the hotel
     public int TotalNights => Guests.Sum(b => b.TotalNights);
     // calculate the total amount spent by all guests at the hotel
@@ -304,9 +261,9 @@ public class Hotel : ICloneable
 
         foreach (var room in rooms)
         {
-            if (_rooms.ContainsKey(room.RoomNumber))
+            if (_roomsMap.ContainsKey(room.RoomNumber))
                 throw new ArgumentException($"duplicate room found: {room.RoomNumber}");
-            _rooms[room.RoomNumber] = room;
+            _roomsMap[room.RoomNumber] = room;
         }
     }
     #endregion
@@ -352,7 +309,7 @@ public class Hotel : ICloneable
             if (RoomNumber < 1 || RoomNumber > 9999)
                 throw new ArgumentOutOfRangeException(nameof(RoomNumber), $"room number must be between 1 and 9999.");
             ArgumentNullException.ThrowIfNull(value, nameof(value));
-            _rooms[value.RoomNumber] = value;
+            _roomsMap[value.RoomNumber] = value;
         }
     }
     #endregion
@@ -386,7 +343,7 @@ public class Hotel : ICloneable
         if(string.IsNullOrEmpty(guestId))
             throw new ArgumentException("guest id cannot be null or empty.", nameof(guestId));
 
-        if (!_guests.TryGetValue(guestId, out HotelGuest? existingGuest))
+        if (!_guestsMap.TryGetValue(guestId, out HotelGuest? existingGuest))
             throw new KeyNotFoundException($"guest with id ({guestId}) not found.");
 
         var guestBookings = from booking in Bookings
@@ -398,10 +355,10 @@ public class Hotel : ICloneable
             : (0, 0.0);
         int score = CalculateGuestScore(Nights, Spent);
         HotelTier tier = CalculateGuestTier(score);
-        _guests[guestId] = existingGuest with
+        _guestsMap[guestId] = existingGuest with
         {
             TotalNights = Nights,
-            TotalSpent = Spent,
+            TotalSpent = Math.Round(Spent, 2, MidpointRounding.AwayFromZero),
             Score = score,
             Tier = tier
         };
@@ -419,18 +376,18 @@ public class Hotel : ICloneable
         int score, totalNights;
         double totalSpent;
         HotelTier tier;
-        if(!_guests.TryGetValue(booking.Guest.Id, out HotelGuest? existingGuest))
+        if(!_guestsMap.TryGetValue(booking.Guest.Id, out HotelGuest? existingGuest))
         {
             score = CalculateGuestScore(booking.Nights, booking.Spent);
             tier = CalculateGuestTier(score);
             var newGuest = new HotelGuest(
                 Guest: booking.Guest,
                 TotalNights: booking.Nights,
-                TotalSpent: booking.Spent,
+                TotalSpent: Math.Round(booking.Spent, 2, MidpointRounding.AwayFromZero),
                 Score: score,
                 Tier: tier
             );
-            _guests[booking.Guest.Id] = newGuest;
+            _guestsMap[booking.Guest.Id] = newGuest;
         }
         else
         {
@@ -438,10 +395,10 @@ public class Hotel : ICloneable
             totalSpent = existingGuest.TotalSpent + booking.Spent;
             score = CalculateGuestScore(totalNights, totalSpent);
             tier = CalculateGuestTier(score);
-            _guests[booking.Guest.Id] = existingGuest with
+            _guestsMap[booking.Guest.Id] = existingGuest with
             {
                 TotalNights = totalNights,
-                TotalSpent = totalSpent,
+                TotalSpent = Math.Round(totalSpent, 2, MidpointRounding.AwayFromZero),
                 Score = score,
                 Tier = tier
             };
@@ -469,12 +426,12 @@ public class Hotel : ICloneable
 
         if (roomNumber < 1 || roomNumber > 9999)
             throw new ArgumentOutOfRangeException(nameof(roomNumber), $"room number must be between 1 and 9999.");
-        if (!_rooms.TryGetValue(roomNumber, out HotelRoom? room))
+        if (!_roomsMap.TryGetValue(roomNumber, out HotelRoom? room))
             throw new KeyNotFoundException($"room with number ({roomNumber}) not found.");
         if (!room.IsEmpty)
             throw new InvalidOperationException($"room with number ({roomNumber}) is not empty.");
 
-        double minSpent = room.PricePerNight * nights;
+        double minSpent = Math.Round(room.PricePerNight * nights, 2, MidpointRounding.AwayFromZero);
         if (spent is not null && spent < minSpent)
             throw new ArgumentException($"spent must be at least ({minSpent}).", nameof(spent));
 
@@ -486,8 +443,8 @@ public class Hotel : ICloneable
             Spent: spent ?? minSpent,
             CheckInDate: checkedInDate
         );
-        _rooms[room.RoomNumber] = room with { IsEmpty = false };
-        _bookings[newBooking.Id] = newBooking;
+        _roomsMap[room.RoomNumber] = room with { IsEmpty = false };
+        _bookingsMap[newBooking.Id] = newBooking;
         UpdateGuestScoreAndTier(newBooking);
         return newBooking.Id;
     }
@@ -501,7 +458,7 @@ public class Hotel : ICloneable
     )
     {
         ArgumentNullException.ThrowIfNull(existedBooking, nameof(existedBooking));
-        if (!_bookings.ContainsKey(existedBooking.Id))
+        if (!_bookingsMap.ContainsKey(existedBooking.Id))
             throw new KeyNotFoundException($"booking with id ({existedBooking.Id}) not found.");
 
         if (nights < 1 || nights > 30)
@@ -516,9 +473,9 @@ public class Hotel : ICloneable
         var updatedBooking = existedBooking with
         {
             Nights = existedBooking.Nights + nights,
-            Spent = existedBooking.Spent + spent
+            Spent = Math.Round(existedBooking.Spent + spent, 2, MidpointRounding.AwayFromZero)
         };
-        _bookings[existedBooking.Id] = updatedBooking;
+        _bookingsMap[existedBooking.Id] = updatedBooking;
         UpdateGuestScoreAndTier(updatedBooking);
     }
 
@@ -530,21 +487,21 @@ public class Hotel : ICloneable
     )
     {
         ArgumentNullException.ThrowIfNull(existedBooking, nameof(existedBooking));
-        if (!_bookings.ContainsKey(existedBooking.Id))
+        if (!_bookingsMap.ContainsKey(existedBooking.Id))
             throw new KeyNotFoundException($"booking with id ({existedBooking.Id}) not found.");
 
         if (newRoomNumber < 1 || newRoomNumber > 9999)
             throw new ArgumentOutOfRangeException(nameof(newRoomNumber), $"room number must be between 1 and 9999.");
-        if (!_rooms.TryGetValue(newRoomNumber, out HotelRoom? newRoom))
+        if (!_roomsMap.TryGetValue(newRoomNumber, out HotelRoom? newRoom))
             throw new KeyNotFoundException($"room with number ({newRoomNumber}) not found.");
         if (!newRoom.IsEmpty)
             throw new InvalidOperationException($"room with number ({newRoomNumber}) is not empty.");
 
-        var oldRoom = _rooms[existedBooking.RoomNumber];
-        _rooms[oldRoom.RoomNumber] = oldRoom with { IsEmpty = true };
-        _rooms[newRoom.RoomNumber] = newRoom with { IsEmpty = false };
+        var oldRoom = _roomsMap[existedBooking.RoomNumber];
+        _roomsMap[oldRoom.RoomNumber] = oldRoom with { IsEmpty = true };
+        _roomsMap[newRoom.RoomNumber] = newRoom with { IsEmpty = false };
 
-        _bookings[existedBooking.Id] = existedBooking with { RoomNumber = newRoom.RoomNumber };
+        _bookingsMap[existedBooking.Id] = existedBooking with { RoomNumber = newRoom.RoomNumber };
     }
 
     // method to check-out a guest from the hotel
@@ -555,7 +512,7 @@ public class Hotel : ICloneable
     )
     {
         ArgumentNullException.ThrowIfNull(existedBooking, nameof(existedBooking));
-        if (!_bookings.ContainsKey(existedBooking.Id))
+        if (!_bookingsMap.ContainsKey(existedBooking.Id))
             throw new KeyNotFoundException($"booking with id ({existedBooking.Id}) not found.");
 
         checkOutDateString = checkOutDateString.Trim();
@@ -566,10 +523,10 @@ public class Hotel : ICloneable
         if (checkOutDate < existedBooking.CheckInDate)
             throw new ArgumentException("check-out date cannot be before check-in date.", nameof(checkOutDate));
 
-        var room = _rooms[existedBooking.RoomNumber];
-        _rooms[room.RoomNumber] = room with { IsEmpty = true };
+        var room = _roomsMap[existedBooking.RoomNumber];
+        _roomsMap[room.RoomNumber] = room with { IsEmpty = true };
 
-        _bookings[existedBooking.Id] = existedBooking with
+        _bookingsMap[existedBooking.Id] = existedBooking with
         {
             CheckOutDate = checkOutDate,
             Status = CheckedStatus.CheckedOut

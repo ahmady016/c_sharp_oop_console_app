@@ -327,13 +327,13 @@ public static class HotelManager
         Console.WriteLine($"-----------------------------------------");
         Console.WriteLine(hotel);
         Console.WriteLine($"-----------------------------------------");
-        Console.WriteLine($"({hotel.Guests.Count}) Total Guests, ({hotel.CurrentGuests.Count}) Current, ({hotel.PastGuests.Count}) Leaved.");
+        Console.WriteLine($"({hotel.TotalGuests}) Total Guests, ({hotel.CurrentGuestsCount}) Current, ({hotel.PastGuestsCount}) Leaved.");
         Console.Write("Guests Count by Tier: ");
-        foreach(var (tier, count) in hotel.TierCounter)
+        foreach(var (tier, count) in hotel.TierGuestsCounter)
             Console.Write($"({count}) -> [{tier}] ");
         Console.WriteLine();
-        Console.WriteLine($"({hotel.Rooms.Count}) Total Rooms, ({hotel.AvailableRooms.Count}) Empty, ({hotel.OccupiedRooms.Count}) Occupied");
-        Console.WriteLine($"({hotel.Bookings.Count}) Total Bookings, ({hotel.CurrentBookings.Length}) Current, ({hotel.CompletedBookings.Length}) Completed, ({hotel.ExpiredBookings.Length}) Expired");
+        Console.WriteLine($"({hotel.TotalRooms}) Total Rooms, ({hotel.AvailableRoomsCount}) Empty, ({hotel.OccupiedRoomsCount}) Occupied");
+        Console.WriteLine($"({hotel.TotalBookings}) Total Bookings, ({hotel.CurrentBookingsCount}) Current, ({hotel.CompletedBookingsCount}) Completed, ({hotel.ExpiredBookingsCount}) Expired");
         Console.WriteLine($"-----------------------------------------");
         Console.WriteLine($"Average Guests Age: {hotel.AverageAge:F2}");
         Console.WriteLine($"Average Guests Score: {hotel.AverageScore:F2}");

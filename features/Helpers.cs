@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Runtime.CompilerServices;
-using HotelManagement;
 
 public static class Helpers
 {
@@ -10,7 +9,10 @@ public static class Helpers
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = {
+            new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
+        },
     };
     // method to generate random unique id with the given length
     // using Base62/Base36 Character Pool
