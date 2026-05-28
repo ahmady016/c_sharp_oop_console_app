@@ -13,15 +13,6 @@ public static class BooksStoreManager
     private static readonly BooksStore _cityLights = new("City Lights Bookstore", "San Francisco, CA, USA");
     private static readonly BooksStore _elliott = new("Elliott Bay Book Company", "Seattle, WA, USA");
 
-    // helper method to get the file path in the same directory as the caller
-    // the compiler replaces callerPath with the full path of the caller file at compile time
-    // so SameDirectory("books.json") always resolves to the directory of the caller file
-    // regardless of where the code is executed (Base Directory, bin folder, etc.)
-    // or from or the current working directory
-    private static string SameDirectory(
-        string fileName, [CallerFilePath] string callerPath = ""
-    ) => Path.Combine(Path.GetDirectoryName(callerPath)!, fileName);
-
     // helper method to map a dictionary of book data to a Book object
     // handle missing keys with (default values or random values)
     // and perform type conversions
@@ -77,7 +68,9 @@ public static class BooksStoreManager
     {
         try
         {
-            var rawJsonBooks = await Helpers.ReadJsonFile(SameDirectory("books.json"));
+            var rawJsonBooks = await Helpers.ReadJsonFileAsync(
+                Helpers.PathWithinSameDirectory("books.json")
+            );
             _books = [.. from dict in rawJsonBooks select MapToBook(dict)];
         }
         catch (Exception ex)
