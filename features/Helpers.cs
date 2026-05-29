@@ -5,9 +5,11 @@ using System.Runtime.CompilerServices;
 
 public static class Helpers
 {
-    private static JsonSerializerOptions _jsonOptions = new()
+    // json serialization global options
+    private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = true,
+        PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = {
@@ -27,7 +29,6 @@ public static class Helpers
             id.Append(CHARACTERS[Random.Shared.Next(CHARACTERS.Length)]);
         return id.ToString();
     }
-
     // method to generating CSS/web-compatible hex color string v1
     public static string GenerateHexColorV1()
     {
@@ -36,7 +37,6 @@ public static class Helpers
         // format with a hashtag prefix and 6-digit hex notation
         return $"#{randomValue:X6}";
     }
-
     // method to generating CSS/web-compatible hex color string v2
     // using individual color channels (RGB)
     public static string GenerateHexColorV2()
@@ -81,7 +81,6 @@ public static class Helpers
             _ => element.GetRawText()
         };
     }
-
     // method to read and deserialize JSON data from a file
     // using System.Text.Json and async I/O
     public static async Task<List<Dictionary<string, object>>> ReadJsonFileAsync(string filePath)
@@ -118,7 +117,7 @@ public static class Helpers
     }
 
     // method to serialize and write JSON data to a file
-    public static async Task WriteDataToJsonFileAsync<T>(string filePath, T data)
+    public static async Task WriteToJsonFileAsync<T>(string filePath, T data)
     {
         // check for valid file path and data otherwise throw exceptions
         ArgumentException.ThrowIfNullOrEmpty(filePath.Trim(), nameof(filePath));
@@ -130,6 +129,15 @@ public static class Helpers
             await JsonSerializer.SerializeAsync(fileStream, data, _jsonOptions);
         // finally after write success, move and overwrite the data to original path
         File.Move(tempPath, filePath, overwrite: true);
+    }
+    // method to read and deserialize JSON data from a file
+    public static async Task<T> ReadFromJsonFileAsync<T>(string filePath)
+    {
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("Guests File Not Found.");
+        await using var fileStream = File.OpenRead(filePath);
+        return await JsonSerializer.DeserializeAsync<T>(fileStream, _jsonOptions)
+            ?? throw new InvalidOperationException("Unable to deserialize JSON file.");
     }
 
     // method to randomly pick one value from a collection

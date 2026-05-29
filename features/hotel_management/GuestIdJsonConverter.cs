@@ -23,9 +23,7 @@ public class GuestIdJsonConverter : JsonConverter<Guest>
     }
     public override Guest? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        Console.WriteLine("Reading Guest Id...");
         string id = reader.GetString() ?? throw new JsonException("guestId cannot be null or empty.");
-        Console.WriteLine("Guest Id Read...");
         return _guestsMap.TryGetValue(id, out Guest? guest)
             ? guest
             : throw new JsonException($"Guest with id ({id}) not found in the guests file.");

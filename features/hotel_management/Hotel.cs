@@ -46,39 +46,31 @@ public class Hotel : ICloneable
     #endregion
 
     #region public state Properties
-    // public readonly (getter only) properties and initializing set on object creation only
+    // public readonly (getter only) properties
     public string Id => _id;
     public string Name => _name;
     public string Location => _location;
     public int Capacity => _capacity;
     public HotelType Type => _type;
-    public IReadOnlyList<HotelRoom> Rooms
-    {
-        get => [..
-            from room in _roomsMap.Values
-            orderby room.RoomNumber ascending
-            select room
-        ];
-        init => _roomsMap = value.ToDictionary(room => room.RoomNumber);
-    }
-    public IReadOnlyList<HotelGuest> Guests
-    {
-        get => [..
-            from guest in _guestsMap.Values
-            orderby guest.Score descending
-            select guest
-        ];
-        init => _guestsMap = value.ToDictionary(hGuest => hGuest.Guest.Id);
-    }
-    public IReadOnlyList<HotelBooking> Bookings
-    {
-        get => [..
-            from booking in _bookingsMap.Values
-            orderby booking.CheckInDate descending
-            select booking
-        ];
-        init => _bookingsMap = value.ToDictionary(booking => booking.Id);
-    }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
+    public IReadOnlyList<HotelRoom> Rooms => [..
+        from room in _roomsMap.Values
+        orderby room.RoomNumber ascending
+        select room
+    ];
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
+    public IReadOnlyList<HotelGuest> Guests => [..
+        from guest in _guestsMap.Values
+        orderby guest.Score descending
+        select guest
+    ];
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
+    public IReadOnlyList<HotelBooking> Bookings => [..
+        from booking in _bookingsMap.Values
+        orderby booking.CheckInDate descending
+        select booking
+    ];
     #endregion
 
     #region public computed getter only Properties
@@ -158,20 +150,23 @@ public class Hotel : ICloneable
         [..from room in Rooms where !room.IsEmpty select room];
 
     // get the guests counter by each tier in the hotel
-    public FrozenDictionary<string, int> TierGuestsCounter => Guests.Aggregate(
-        (
-            from tier in Enum.GetValues<HotelTier>()
-            where tier != HotelTier.None
-            select KeyValuePair.Create(tier.ToString(), 0)
-        ).ToDictionary(kv => kv.Key, kv => kv.Value),
-        (dict, guest) => {
-            dict[guest.Tier.ToString()]++;
-            return dict;
-        },
-        dict => dict.ToFrozenDictionary()
-    );
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
+    public IReadOnlyDictionary<string, int> TierGuestsCounter => Guests.Aggregate(
+            (
+                from tier in Enum.GetValues<HotelTier>()
+                where tier != HotelTier.None
+                select KeyValuePair.Create(tier.ToString(), 0)
+            ).ToDictionary(kv => kv.Key, kv => kv.Value),
+            (dict, guest) => {
+                dict[guest.Tier.ToString()]++;
+                return dict;
+            },
+            dict => dict.ToFrozenDictionary()
+        );
+
     // get the bookings counter by each guest in the hotel
-    public FrozenDictionary<string, int> GuestBookingsCounter => Bookings.Aggregate(
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
+    public IReadOnlyDictionary<string, int> GuestBookingsCounter => Bookings.Aggregate(
         (from guest in Guests select KeyValuePair.Create(guest.Guest.Id, 0))
         .ToDictionary(kv => kv.Key, kv => kv.Value),
         (dict, booking) => {
@@ -180,43 +175,75 @@ public class Hotel : ICloneable
         },
         dict => dict.ToFrozenDictionary()
     );
+
     // calculate the total number of guests in the hotel
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int TotalGuests => Guests.Count;
+
     // get the total number of current guests
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int CurrentGuestsCount => CurrentGuests.Count;
+
     // get the total number of leaved guests
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int PastGuestsCount => PastGuests.Count;
+
     // get the total number of rooms
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int TotalRooms => Rooms.Count;
+
     // get the total number of available rooms
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int AvailableRoomsCount => AvailableRooms.Count;
+
     // get the total number of occupied rooms
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int OccupiedRoomsCount => OccupiedRooms.Count;
+
     // get the total number of bookings in the hotel
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int TotalBookings => Bookings.Count;
+
     // get the total number of current bookings
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int CurrentBookingsCount => CurrentBookings.Length;
+
     // get the total number of completed bookings
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int CompletedBookingsCount => CompletedBookings.Length;
+
     // get the total number of expired bookings
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int ExpiredBookingsCount => ExpiredBookings.Length;
+
     // calculate the total number of nights stayed by all guests at the hotel
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public int TotalNights => Guests.Sum(b => b.TotalNights);
+
     // calculate the total amount spent by all guests at the hotel
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public double TotalSpent => Math.Round(Guests.Sum(b => b.TotalSpent), 2);
+
     // calculate the average number of nights stayed per guest booking at the hotel
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public double AverageNights => Guests.Count > 0
         ? Math.Round((double)TotalNights / Guests.Count, 2)
         : 0.0;
+
     // calculate the average amount spent per guest booking at the hotel
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public double AverageSpent => Guests.Count > 0
         ? Math.Round(TotalSpent / Guests.Count, 2)
         : 0.0;
+
     // calculate the average guests score in the hotel
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public double AverageScore => Guests.Count > 0
         ? Math.Round(Guests.Average(g => g.Score), 2)
         : 0.0;
+
     // calculate the average guests age in the hotel
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
     public double AverageAge => Guests.Count > 0
         ? Math.Round(Guests.Average(g => g.Guest.Age), 2)
         : 0.0;
@@ -225,10 +252,11 @@ public class Hotel : ICloneable
     #region public constructors
     // constructor to initialize the hotel object with required properties and validations
     public Hotel(
-        string name,
-        string location,
-        HotelType type = HotelType.Economy,
-        int capacity = 50
+        string id = "",
+        string name = "",
+        string location = "",
+        int capacity = 50,
+        HotelType type = HotelType.Economy
     )
     {
         name = name.Trim();
@@ -241,30 +269,78 @@ public class Hotel : ICloneable
         if (capacity < 10 || capacity > 1000)
             throw new ArgumentException("capacity must be between 10 and 1000.");
 
-        _id = Helpers.GenerateId(10);
+        _id = string.IsNullOrEmpty(id) ? Helpers.GenerateId(10) : id;
         _name = name;
         _location = location;
         _type = type;
         _capacity = capacity;
     }
     public Hotel(
-        string name,
-        string location,
-        List<HotelRoom> rooms,
+        string id = "",
+        string name = "",
+        string location = "",
+        int capacity = 50,
         HotelType type = HotelType.Economy,
-        int capacity = 50
-    ) : this(name, location, type, capacity)
+        IReadOnlyList<HotelRoom> rooms = default!
+    ) : this(id, name, location, capacity, type)
     {
         ArgumentNullException.ThrowIfNull(rooms);
         if (rooms.Count < 5 || rooms.Count > 1000)
-            throw new ArgumentException("number of rooms cannot exceed the hotel capacity.");
+            throw new ArgumentOutOfRangeException(nameof(rooms), $"number of rooms must be between 5 and 1000.");
 
         foreach (var room in rooms)
-        {
-            if (_roomsMap.ContainsKey(room.RoomNumber))
+            if (!_roomsMap.TryAdd(room.RoomNumber, room))
                 throw new ArgumentException($"duplicate room found: {room.RoomNumber}");
-            _roomsMap[room.RoomNumber] = room;
-        }
+    }
+    // constructor used by JSON deserialization to fill the hotel object with reeded data
+    // so I receive the computed properties from JSON to bypass deserialization error
+    // and do nothing with it here as it's already computed
+    [JsonConstructor]
+    public Hotel(
+        string id,
+        string name,
+        string location,
+        int capacity,
+        HotelType type,
+        IReadOnlyList<HotelRoom> rooms = default!,
+        IReadOnlyList<HotelGuest> guests = default!,
+        IReadOnlyList<HotelBooking> bookings = default!,
+        IReadOnlyDictionary<string, int> tierGuestsCounter = default!,
+        IReadOnlyDictionary<string, int> guestBookingsCounter = default!,
+        int totalGuests = default!,
+        int currentGuestsCount = default!,
+        int pastGuestsCount = default!,
+        int totalRooms = default!,
+        int availableRoomsCount = default!,
+        int occupiedRoomsCount = default!,
+        int totalBookings = default!,
+        int currentBookingsCount = default!,
+        int completedBookingsCount = default!,
+        int expiredBookingsCount = default!,
+        int totalNights = default!,
+        double totalSpent = default!,
+        double averageNights = default!,
+        double averageSpent = default!,
+        double averageScore = default!,
+        double averageAge = default!
+
+    ) : this(id, name, location, capacity, type, rooms)
+    {
+        ArgumentNullException.ThrowIfNull(guests);
+        ArgumentNullException.ThrowIfNull(bookings);
+
+        if (guests.Count == 0)
+            throw new ArgumentException("must provide at least one guest for the hotel.");
+        if (bookings.Count == 0)
+            throw new ArgumentException("must provide at least one booking for the hotel.");
+
+        foreach (var guest in guests)
+            if (!_guestsMap.TryAdd(guest.Guest.Id, guest))
+                throw new ArgumentException($"duplicate guest found: {guest.Guest.Id}");
+
+        foreach (var booking in bookings)
+            if (!_bookingsMap.TryAdd(booking.Id, booking))
+                throw new ArgumentException($"duplicate booking found: {booking.Id}");
     }
     #endregion
 

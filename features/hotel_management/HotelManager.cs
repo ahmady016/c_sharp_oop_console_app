@@ -38,12 +38,26 @@ public static class HotelManager
         ("2025-07-01", "2025-12-31"),
         ("2026-01-01", "2026-04-30")
     ];
-    private static readonly List<Guest> _guests;
-    private static readonly Hotel _resortHotel;
-    private static readonly Hotel _cityHotel;
-    private static readonly Hotel _boutiqueHotel;
-    private static readonly Hotel _economyHotel;
-    private static readonly IReadOnlyList<Hotel> _hotels = [];
+    private const string GUESTS_FILE_NAME = "guests.json";
+    private const string RESORT_HOTEL_FILE_NAME = "paradise_resort.json";
+    private const string CITY_HOTEL_FILE_NAME = "city_hotel.json";
+    private const string BOUTIQUE_HOTEL_FILE_NAME = "boutique_hotel.json";
+    private const string ECONOMY_HOTEL_FILE_NAME = "economy_hotel.json";
+    private static readonly string DATA_DIRECTORY = Path.Combine(Helpers.SameDirectory(), "data");
+    private static readonly string[] _filesPaths = [
+        Path.Combine(DATA_DIRECTORY, GUESTS_FILE_NAME),
+        Path.Combine(DATA_DIRECTORY, RESORT_HOTEL_FILE_NAME),
+        Path.Combine(DATA_DIRECTORY, CITY_HOTEL_FILE_NAME),
+        Path.Combine(DATA_DIRECTORY, BOUTIQUE_HOTEL_FILE_NAME),
+        Path.Combine(DATA_DIRECTORY, ECONOMY_HOTEL_FILE_NAME)
+    ];
+
+    private static List<Guest> _guests = [];
+    private static Hotel _resortHotel = default!;
+    private static Hotel _cityHotel = default!;
+    private static Hotel _boutiqueHotel = default!;
+    private static Hotel _economyHotel = default!;
+    private static IReadOnlyList<Hotel> _hotels = [];
     private static List<int> _roomNumbers = [];
     private static List<HotelRoom> _rooms = [];
 
@@ -157,31 +171,6 @@ public static class HotelManager
             gender: gender.ToString().ToLower()
         )
     ];
-
-    // seeding the 4 hotels and 1200 guests in the static constructor
-    static HotelManager()
-    {
-        Console.WriteLine("------------------------------");
-        Console.WriteLine("Welcome to the Hotel Management System!");
-        Console.WriteLine("------------------------------");
-
-        // fill each one of the 4 hotels with random rooms and prices
-        Console.WriteLine("Seeding the 4 Hotel Started ...");
-        _resortHotel = GetResortHotel();
-        _cityHotel = GetCityHotel();
-        _boutiqueHotel = GetBoutiqueHotel();
-        _economyHotel = GetEconomyHotel();
-        Console.WriteLine("Seeding the 4 Hotel Finished!");
-        Console.WriteLine("-----------------------------------------");
-
-        // generate a list of 1200 random guests to check-in to each one of the 4 hotels
-        Console.WriteLine("Seeding the 1200 Guests Started ...");
-        _guests = GetGuests(1200);
-        Console.WriteLine("Seeding the 1200 Guests Finished!");
-        Console.WriteLine("-----------------------------------------");
-        // create a list from the 4 hotels
-        _hotels = [_resortHotel, _cityHotel, _boutiqueHotel, _economyHotel];
-    }
 
     // method to check-in a given count of randomly picked guests to the given hotel
     private static void CheckInGuests(
@@ -306,17 +295,94 @@ public static class HotelManager
         UpdateBookings(_economyHotel);
     }
 
+    // method to check for guests and 4 hotels JSON files existence
+    private static bool DataFilesExists()
+    {
+        foreach(string path in _filesPaths)
+            if (!File.Exists(path))
+                return false;
+        return true;
+    }
+
+    // method to read all guests and hotels data from JSON files
+    // and fill in the hotels and guests lists
+    private static async Task ReadDataFromJsonFiles()
+    {
+        Console.WriteLine("Reading Guests Data from JSON File Starts");
+        Console.WriteLine("-----------------------------------------");
+        _guests = await Helpers.ReadFromJsonFileAsync<List<Guest>>(Path.Combine(DATA_DIRECTORY, GUESTS_FILE_NAME));
+        Console.WriteLine("Reading Guests Data from JSON File Finished");
+        Console.WriteLine("-----------------------------------------");
+
+        Console.WriteLine("Reading Hotels Data from JSON Files Starts");
+        Console.WriteLine("-----------------------------------------");
+        _resortHotel = await Helpers.ReadFromJsonFileAsync<Hotel>(Path.Combine(DATA_DIRECTORY, RESORT_HOTEL_FILE_NAME));
+        _cityHotel = await Helpers.ReadFromJsonFileAsync<Hotel>(Path.Combine(DATA_DIRECTORY, CITY_HOTEL_FILE_NAME));
+        _boutiqueHotel = await Helpers.ReadFromJsonFileAsync<Hotel>(Path.Combine(DATA_DIRECTORY, BOUTIQUE_HOTEL_FILE_NAME));
+        _economyHotel = await Helpers.ReadFromJsonFileAsync<Hotel>(Path.Combine(DATA_DIRECTORY, ECONOMY_HOTEL_FILE_NAME));
+        Console.WriteLine("Reading Hotels Data from JSON Files Finished");
+        Console.WriteLine("-----------------------------------------");
+
+        _hotels = [_resortHotel, _cityHotel, _boutiqueHotel, _economyHotel];
+    }
+
+    // method to seed the hotels and guests data
+    private static void SeedDataInMemory()
+    {
+        // fill each one of the 4 hotels with random rooms and prices
+        Console.WriteLine("Seeding the 4 Hotel Started ...");
+        Console.WriteLine("-----------------------------------------");
+        _resortHotel = GetResortHotel();
+        _cityHotel = GetCityHotel();
+        _boutiqueHotel = GetBoutiqueHotel();
+        _economyHotel = GetEconomyHotel();
+        Console.WriteLine("Seeding the 4 Hotel Finished!");
+        Console.WriteLine("-----------------------------------------");
+
+        // generate a list of 1200 random guests to check-in to each one of the 4 hotels
+        Console.WriteLine("Seeding the 1200 Guests Started ...");
+        Console.WriteLine("-----------------------------------------");
+        _guests = GetGuests(1200);
+        Console.WriteLine("Seeding the 1200 Guests Finished!");
+        Console.WriteLine("-----------------------------------------");
+
+        try
+        {
+            // create a list from the 4 hotels
+            _hotels = [_resortHotel, _cityHotel, _boutiqueHotel, _economyHotel];
+
+            // check-in and check-out guests to each one of the 4 hotels
+            Console.WriteLine("Testing Check-in and Check-out Guests Starts");
+            CheckInAndCheckOutGuests();
+            Console.WriteLine("Testing Check-in and Check-out Guests Finished");
+            Console.WriteLine("-----------------------------------------");
+
+            // check-in and update bookings to each one of the 4 hotels
+            Console.WriteLine("Testing Presently Check-in and Update Bookings Starts");
+            CheckInAndUpdateBookings();
+            Console.WriteLine("Testing Presently Check-in and Update Bookings Finished");
+            Console.WriteLine("-----------------------------------------");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
     // method to write Hotel Manager data to JSON files
     private static async Task WriteDataToJsonFiles()
     {
-        string DATA_DIRECTORY = Path.Combine(Helpers.SameDirectory(), "data");
-        string filePath = Path.Combine(DATA_DIRECTORY, "guests.json");
-        await Helpers.WriteDataToJsonFileAsync(filePath, _guests);
+        string filePath = Path.Combine(DATA_DIRECTORY, GUESTS_FILE_NAME);
+        Console.WriteLine("Writing Guests and Hotels Data to JSON Files Starts");
+        Console.WriteLine("-----------------------------------------");
+        await Helpers.WriteToJsonFileAsync(filePath, _guests);
         foreach (var hotel in _hotels)
         {
             filePath = Path.Combine(DATA_DIRECTORY, $"{hotel.Name.ToLower().Replace(' ', '_')}.json");
-            await Helpers.WriteDataToJsonFileAsync(filePath, hotel);
+            await Helpers.WriteToJsonFileAsync(filePath, hotel);
         }
+        Console.WriteLine("Writing Guests and Hotels Data to JSON Files Finished");
+        Console.WriteLine("-----------------------------------------");
     }
 
     // method to print some details about the given hotel
@@ -358,28 +424,24 @@ public static class HotelManager
     // method to run and test the hotel management system
     public static async Task Run()
     {
+        Console.WriteLine("------------------------------");
+        Console.WriteLine("Welcome to the Hotel Management System!");
+        Console.WriteLine("------------------------------");
         try
         {
-            Console.WriteLine("Testing Check-in and Check-out Guests Starts");
-            CheckInAndCheckOutGuests();
-            Console.WriteLine("Testing Check-in and Check-out Guests Finished");
-            Console.WriteLine("-----------------------------------------");
-
-            Console.WriteLine("Testing Presently Check-in and Update Bookings Starts");
-            CheckInAndUpdateBookings();
-            Console.WriteLine("Testing Presently Check-in and Update Bookings Finished");
-            Console.WriteLine("-----------------------------------------");
+            if(DataFilesExists())
+                await ReadDataFromJsonFiles();
+            else
+            {
+                SeedDataInMemory();
+                await WriteDataToJsonFiles();
+            }
 
             Console.WriteLine("Testing Print Hotel Info Starts");
             Console.WriteLine("-----------------------------------------");
             foreach (var hotel in _hotels) DisplayHotelInfo(hotel);
             Console.WriteLine("Testing Print Hotel Info Finished");
             Console.WriteLine("-----------------------------------------");
-
-            Console.WriteLine("Writing Guests and Hotels Data to JSON Files Starts");
-            Console.WriteLine("-----------------------------------------");
-            await WriteDataToJsonFiles();
-            Console.WriteLine("Writing Guests and Hotels Data to JSON Files Finished");
 
             Console.WriteLine("-----------------------------------------");
             Console.WriteLine("Press any key to exit...");
@@ -390,5 +452,4 @@ public static class HotelManager
             Console.WriteLine($"Error: {ex.Message}");
         }
     }
-
 }
