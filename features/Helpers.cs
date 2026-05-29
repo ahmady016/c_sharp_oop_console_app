@@ -12,6 +12,9 @@ public static class Helpers
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        // tells the serializer to silently skip any JSON property that
+        // has no matching constructor parameter or settable property
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
         Converters = {
             new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
         },
