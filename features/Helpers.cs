@@ -169,4 +169,57 @@ public static class Helpers
         return list;
     }
 
+    public static void PrintHeader(string title)
+    {
+        if(string.IsNullOrEmpty(title.Trim()))
+            throw new ArgumentNullException(nameof(title), $"Parameter [{nameof(title)}] is null or empty.");
+
+        int width = Console.WindowWidth - 2;
+        string border = new('═', width);
+        int paddingWidth = (width - title.Length) / 2;
+        string padding = new(' ', paddingWidth);
+
+        Console.Clear();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine($"╔{border}╗");
+        Console.WriteLine($"║{padding}{title}{padding}║");
+        Console.WriteLine($"╚{border}╝");
+        Console.ResetColor();
+        Console.WriteLine();
+    }
+    public static void PrintFooter(string title)
+    {
+        if (string.IsNullOrEmpty(title.Trim()))
+            throw new ArgumentNullException(nameof(title), $"Parameter [{nameof(title)}] is null or empty.");
+
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("══════════════════════════════════════════════════════");
+        Console.WriteLine($"{title} Completed Successfully.");
+        Console.WriteLine("══════════════════════════════════════════════════════");
+        Console.ResetColor();
+    }
+    public static void RunScenario(string title, Action scenario)
+    {
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.DarkCyan;
+        Console.WriteLine("══════════════════════════════════════════════════════");
+        Console.WriteLine($" ▶ Running {title} Scenario:");
+        Console.WriteLine("══════════════════════════════════════════════════════");
+        Console.ResetColor();
+        scenario();
+    }
+    public static void PrintSuccess(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"  ✓ {message}");
+        Console.ResetColor();
+    }
+    public static void PrintError(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"  ✗ {message}");
+        Console.ResetColor();
+    }
+
 }
