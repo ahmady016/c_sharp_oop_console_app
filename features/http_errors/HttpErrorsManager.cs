@@ -62,6 +62,7 @@ Exception -> [.NET base]
 public record User(int Id, string Name, string Email, string Role);
 public record Product(int Id, string Name, decimal Price, int Stock);
 public record Order(int Id, int UserId, int ProductId, int Quantity);
+
 // ════════════════════════════════════════════════════════════════════════════
 //  FAKE REPOSITORY — throws HTTP exceptions to simulate real API behaviors
 // ════════════════════════════════════════════════════════════════════════════
@@ -197,9 +198,23 @@ public sealed class ProductRepository
 
 
 }
+
 // ════════════════════════════════════════════════════════════════════════════
-//  HTTP ERRORS TESTER
+//  WHAT EACH SCENARIO DEMONSTRATES IN THE HTTP ERRORS MANAGER CLASS
 // ════════════════════════════════════════════════════════════════════════════
+// 01   200    ✅ Happy path — no exception thrown
+// 02   404    NotFoundException with ResourceName
+// 03   401    UnauthorizedException with AuthScheme
+// 04   403    ForbiddenException with RequiredPermission
+// 05   400    BadRequestException with field-level Errors dictionary
+// 06   409    ConflictException on duplicate email
+// 07   422    UnprocessableEntityException with Reasons list
+// 08   200    ✅ Full order flow — no exception
+// 09   422    Out-of-stock UnprocessableEntityException
+// 10  400     BadRequestException with Negative quantity
+// 11  502     BadGatewayException with UpstreamService + RetryAfterSecs
+// 12  mixed   Polymorphic catch with HttpClientException base catches all 4xx errors
+// ----------------------------------------------------------------------------------
 public class HttpErrorsManager
 {
     static readonly UserRepository    Users    = new();
