@@ -1,9 +1,11 @@
 using System.Text;
 using System.Text.Json;
+using System.Net.Mail;
+using System.Text.RegularExpressions;
 using System.Text.Json.Serialization;
 using System.Runtime.CompilerServices;
 
-public static class Helpers
+public static partial class Helpers
 {
     // json serialization global options
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -169,6 +171,42 @@ public static class Helpers
         return list;
     }
 
+    // method to get the plural form of a word based on the count
+    public static string GetPluralString(string value, int count) => $"{value}{(count > 1 ? "s" : "")}";
+
+    // method to validate email using built in .NET MailAddress class
+    public static bool IsValidEmail(string email)
+    {
+        if (string.IsNullOrEmpty(email?.Trim()))
+            return false;
+        return MailAddress.TryCreate(email.Trim(), out _);
+    }
+
+    // method to validate an absolute URL using built in Uri class
+    public static bool IsValidUrl(string url)
+    {
+        if (string.IsNullOrEmpty(url?.Trim()))
+            return false;
+        return Uri.IsWellFormedUriString(url.Trim(), UriKind.Absolute);
+    }
+
+    // method to validate phone number (simple regex for international formats)
+    [GeneratedRegex(@"^\+?[1-9]\d{6,14}$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-GB")]
+    private static partial Regex _validMobileRegex();
+    public static bool IsValidMobileNumber(string phoneNumber)
+    {
+        if (string.IsNullOrEmpty(phoneNumber?.Trim()))
+            return false;
+        // Remove common formatting characters before validation
+        phoneNumber = phoneNumber.Trim()
+            .Replace(" ", "")
+            .Replace("-", "")
+            .Replace("(", "")
+            .Replace(")", "");
+        return _validMobileRegex().IsMatch(phoneNumber);
+    }
+
+    #region Console UI Helpers
     public static void PrintHeader(string title)
     {
         if(string.IsNullOrEmpty(title.Trim()))
@@ -221,5 +259,6 @@ public static class Helpers
         Console.WriteLine($"  ✗ {message}");
         Console.ResetColor();
     }
+    #endregion
 
 }
