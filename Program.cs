@@ -2,6 +2,7 @@
 {
     static async Task Main()
     {
+        ResumesBuilder.ResumeManager.Run();
         // HttpErrors.HttpErrorsManager.Run();
         // await HotelManagement.HotelManager.Run();
         // await BooksStore.BooksStoreManager.Run();
