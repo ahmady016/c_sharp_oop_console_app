@@ -23,6 +23,11 @@ public sealed class ContactSection : IResumeSection
         ArgumentNullException.ThrowIfNull(phoneNumber, nameof(phoneNumber));
         ArgumentNullException.ThrowIfNull(linkedInProfileUrl, nameof(linkedInProfileUrl));
 
+        email = email.Trim();
+        address = address.Trim();
+        phoneNumber = Helpers.CleanPhoneNumber(phoneNumber);
+        linkedInProfileUrl = linkedInProfileUrl.Trim();
+
         if (!Helpers.IsValidEmail(email))
             throw new ArgumentException("Invalid email.", nameof(email));
         if (!Helpers.IsValidMobileNumber(phoneNumber))

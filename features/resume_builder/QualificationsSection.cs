@@ -1,13 +1,24 @@
 namespace ResumesBuilder;
 
+public enum SchoolDegree : byte
+{
+    High_School_Diploma = 1,
+    Associate_Degree = 2,
+    Bachelor_Of_Science = 3,
+    Bachelor_Of_Arts = 4,
+    Master_Of_Science = 5,
+    Master_Of_Arts = 6,
+    Doctorate = 7
+}
+
 public sealed class Qualification
 {
-    private readonly string _degree;
+    private readonly SchoolDegree _degree;
     private readonly string _institution;
     private readonly double _grade;
     private readonly int _graduationYear;
 
-    public string Degree => _degree;
+    public string Degree => _degree.ToString();
     public string Institution => _institution;
     public string Grade => $"{_grade:F2}%";
     public int GraduationYear => _graduationYear;
@@ -21,6 +32,8 @@ public sealed class Qualification
     {
         if (string.IsNullOrWhiteSpace(degree))
             throw new ArgumentException("Degree cannot be null or whitespace.", nameof(degree));
+        if(!Enum.TryParse(degree, out SchoolDegree parsedDegree))
+            throw new ArgumentException("Invalid degree.", nameof(degree));
         if (string.IsNullOrWhiteSpace(institution))
             throw new ArgumentException("Institution cannot be null or whitespace.", nameof(institution));
         if (grade < 0 || grade > 100)
@@ -28,7 +41,7 @@ public sealed class Qualification
         if (graduationYear < 1900 || graduationYear > DateTime.Now.Year + 10)
             throw new ArgumentException("Graduation year must be between 1900 and 10 years in the future.", nameof(graduationYear));
 
-        _degree = degree.Trim();
+        _degree = parsedDegree;
         _institution = institution.Trim();
         _grade = grade;
         _graduationYear = graduationYear;

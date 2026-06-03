@@ -94,9 +94,10 @@ public sealed class Resume : IResumeSection
             {headerDivider}
             {LeastProficientSkill}
             {headerDivider}
-            Current Job:
-            {headerDivider}
-            {CurrentJob}
+            {(CurrentJob is not null
+                ? $"Current Job:\n{headerDivider}\n{CurrentJob}"
+                : "Current Job: None"
+            )}
             {headerDivider}
             Most Experienced Job:
             {headerDivider}

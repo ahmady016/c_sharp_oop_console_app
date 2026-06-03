@@ -38,81 +38,100 @@ The five design decisions worth understanding
     A caller can never produce a Resume with a missing required section,
     so the guard is at the construction site, not scattered across every consumer.
 */
+using Bogus;
+
 namespace ResumesBuilder;
 
 public static class ResumeManager
 {
+    private static readonly Faker _faker = new();
+    private static PersonalSection PersonalInfo
+    {
+        get
+        {
+            var gender = _faker.Person.Gender;
+            return new(
+                fullName: _faker.Name.FullName(gender),
+                birthDate: _faker.Date
+                    .BetweenDateOnly(DateOnly.Parse("1988-01-01"), DateOnly.Parse("2004-12-31"))
+                    .ToString("yyyy-MM-dd"),
+                gender: gender.ToString().ToLower(),
+                nationality: _faker.Address.Country().ToLower(),
+                nationalIdNumber: _faker.Phone.PhoneNumber("##############"),
+                maritalStatus: _faker.PickRandom<MaritalStatus>()
+            );
+        }
+    }
+    private static ContactSection ContactInfo => new(
+        email: _faker.Internet.Email(),
+        address: _faker.Address.FullAddress(),
+        phoneNumber: _faker.Phone.PhoneNumber("###########"),
+        linkedInProfileUrl: _faker.Internet.Url()
+    );
+    private static Qualification Qualification => new(
+        degree: _faker.PickRandom<SchoolDegree>().ToString(),
+        institution: _faker.Company.CompanyName(),
+        graduationYear: _faker.Random.Int(2008, 2025),
+        grade: _faker.Random.Double(17.0, 97.99)
+    );
+    private static QualificationsSection Qualifications => new(
+        [Qualification, Qualification, Qualification]
+    );
+    private static Skill Skill => new(
+        title: _faker.Lorem.Word(),
+        description: _faker.Lorem.Sentence(),
+        proficiencyLevel: _faker.Random.Double(2.4, 9.5)
+    );
+    private static SkillsSection Skills => new(
+        [Skill, Skill, Skill]
+    );
+    private static JobExperience JobExperience => new(
+        jobTitle: _faker.Name.JobTitle(),
+        companyName: _faker.Company.CompanyName(),
+        achievements: _faker.Lorem.Sentences(_faker.Random.Int(3, 7)),
+        startDate: _faker.Date
+            .BetweenDateOnly(DateOnly.Parse("2022-01-01"), DateOnly.Parse("2023-12-31"))
+            .ToString("yyyy-MM-dd"),
+        endDate: _faker.PickRandom(_faker.Date
+            .BetweenDateOnly(DateOnly.Parse("2022-01-01"), DateOnly.Parse("2023-12-31"))
+            .ToString("yyyy-MM-dd"),
+            null
+        )
+    );
+    private static JobExperiencesSection JobExperiences => new(
+        [JobExperience, JobExperience, JobExperience]
+    );
     private static Resume BuildResume()
     {
         return new ResumeBuilder()
-            .WithPersonalInfo(new PersonalSection(
-                fullName: "John Doe",
-                birthDate: "1990-01-01",
-                gender: "male",
-                nationality: "United States",
-                nationalIdNumber: "12345678901114",
-                maritalStatus: MaritalStatus.Single
-            ))
-            .WithContactInfo(new ContactSection(
-                email: "6dNlq@example.com",
-                address: "123 Main St, Los Angeles, USA",
-                phoneNumber: "123-456-7890",
-                linkedInProfileUrl: "https://www.linkedin.com/in/johndoe256"
-            ))
-            .WithSkills(new SkillsSection(
-                [
-                    new Skill(
-                        title: "C#",
-                        description: "Proficient in C# programming language.",
-                        proficiencyLevel: 7.3
-                    ),
-                    new Skill(
-                        title: "ASP.NET Core",
-                        description: "Experienced in ASP.NET Core development.",
-                        proficiencyLevel: 4.5
-                    ),
-                    new Skill(
-                        title: "SQL Server",
-                        description: "Skilled in SQL Server database management.",
-                        proficiencyLevel: 8.2
-                    )
-                ]
-            ))
-            .WithQualifications(new QualificationsSection(
-                [new Qualification(
-                    degree: "Bachelor of Science in Computer Science",
-                    institution: "University of Example",
-                    graduationYear: 2012,
-                    grade: 75
-                )]
-            ))
-            .WithExperiences(new JobExperiencesSection(
-                [new JobExperience(
-                    jobTitle: "Software Engineer",
-                    companyName: "ABC Company",
-                    startDate: "2012-06-01",
-                    endDate: "2018-08-31",
-                    achievements: $"""
-                        "Developed and maintained web applications using C# and ASP.NET Core.",
-                        "Collaborated with cross-functional teams to design and implement new features.",
-                        "Optimized application performance, resulting in a 20% reduction in load times."
-                    """
-                )]
-            ))
+            .WithPersonalInfo(PersonalInfo)
+            .WithContactInfo(ContactInfo)
+            .WithSkills(Skills)
+            .WithQualifications(Qualifications)
+            .WithExperiences(JobExperiences)
         .Build(
-            title: "John Doe Resume",
-            description: "Experienced software engineer with a strong background in C# and ASP.NET Core."
+            title: _faker.Name.FullName(),
+            description: _faker.Lorem.Sentence()
         );
     }
+
     public static void Run()
     {
         Helpers.PrintHeader("Start of Resumes Builder App");
         try
         {
-            var resume = BuildResume();
-            Helpers.PrintSuccess("John Doe Resume are built successfully!");
-            Console.WriteLine();
-            Console.WriteLine(resume.Render());
+            var resume01 = BuildResume();
+            var resume02 = BuildResume();
+            var resume03 = BuildResume();
+            Helpers.PrintSuccess("3 random Resumes are generated and built successfully!");
+            Console.WriteLine("------------------------------");
+            foreach (var resume in (List<Resume>)[resume01, resume02, resume03])
+            {
+                Console.ForegroundColor = Helpers.GetRandomConsoleColor();
+                Console.WriteLine(resume);
+                Console.WriteLine("------------------------------");
+                Console.ResetColor();
+            }
         }
         catch (Exception ex)
         {
