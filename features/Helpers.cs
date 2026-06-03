@@ -190,23 +190,42 @@ public static partial class Helpers
         return Uri.IsWellFormedUriString(url.Trim(), UriKind.Absolute);
     }
 
+    // method to remove common formatting characters before validating phone number
+    public static string CleanPhoneNumber(string phoneNumber) =>
+        phoneNumber.Trim()
+            .Replace(" ", "")
+            .Replace("-", "")
+            .Replace(".", "")
+            .Replace("/", "")
+            .Replace("+", "")
+            .Replace("(", "")
+            .Replace(")", "");
     // method to validate phone number (simple regex for international formats)
-    [GeneratedRegex(@"^\+?[1-9]\d{6,14}$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-GB")]
+    [GeneratedRegex(@"^\+?[0-9]\d{7,14}$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-GB")]
     private static partial Regex _validMobileRegex();
     public static bool IsValidMobileNumber(string phoneNumber)
     {
         if (string.IsNullOrEmpty(phoneNumber?.Trim()))
             return false;
-        // Remove common formatting characters before validation
-        phoneNumber = phoneNumber.Trim()
-            .Replace(" ", "")
-            .Replace("-", "")
-            .Replace("(", "")
-            .Replace(")", "");
         return _validMobileRegex().IsMatch(phoneNumber);
     }
 
     #region Console UI Helpers
+    public static ConsoleColor GetRandomConsoleColor() =>
+        PickOne([
+            ConsoleColor.Gray,
+            ConsoleColor.Green,
+            ConsoleColor.Blue,
+            ConsoleColor.Cyan,
+            ConsoleColor.Magenta,
+            ConsoleColor.Yellow,
+            ConsoleColor.White,
+            ConsoleColor.DarkYellow,
+            ConsoleColor.DarkGreen,
+            ConsoleColor.DarkCyan,
+            ConsoleColor.DarkMagenta,
+            ConsoleColor.DarkGray,
+        ]);
     public static void PrintHeader(string title)
     {
         if(string.IsNullOrEmpty(title.Trim()))
