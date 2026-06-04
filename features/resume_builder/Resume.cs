@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ResumesBuilder;
 
 public sealed class Resume : IResumeSection
@@ -26,6 +28,7 @@ public sealed class Resume : IResumeSection
         yield return _experiences;
         yield return _skills;
     }
+    [JsonConstructor]
     public Resume(
         string title,
         string description,

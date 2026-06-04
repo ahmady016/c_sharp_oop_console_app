@@ -45,17 +45,21 @@ namespace ResumesBuilder;
 public static class ResumeManager
 {
     private static readonly Faker _faker = new();
+    private static readonly string DATA_DIRECTORY = Path.Combine(Helpers.SameDirectory(), "data");
+    private static Bogus.DataSets.Name.Gender _gender = default;
+    private static string _fullName = default!;
     private static PersonalSection PersonalInfo
     {
         get
         {
-            var gender = _faker.Person.Gender;
+            _gender = _faker.Person.Gender;
+            _fullName = _faker.Name.FullName(_gender);
             return new(
-                fullName: _faker.Name.FullName(gender),
+                fullName: _fullName,
                 birthDate: _faker.Date
                     .BetweenDateOnly(DateOnly.Parse("1988-01-01"), DateOnly.Parse("2004-12-31"))
                     .ToString("yyyy-MM-dd"),
-                gender: gender.ToString().ToLower(),
+                gender: _gender.ToString().ToLower(),
                 nationality: _faker.Address.Country().ToLower(),
                 nationalIdNumber: _faker.Phone.PhoneNumber("##############"),
                 maritalStatus: _faker.PickRandom<MaritalStatus>()
@@ -110,28 +114,56 @@ public static class ResumeManager
             .WithQualifications(Qualifications)
             .WithExperiences(JobExperiences)
         .Build(
-            title: _faker.Name.FullName(),
-            description: _faker.Lorem.Sentence()
+            title: _fullName,
+            description: _faker.Lorem.Sentences(_faker.Random.Int(3, 5))
         );
     }
 
-    public static void Run()
+    private static List<Resume> GenerateRandomResumes(int count = 3)
+    {
+        if(count < 1 || count > 100)
+            throw new ArgumentOutOfRangeException(nameof(count));
+        return [..from _ in Enumerable.Range(0, count) select BuildResume()];
+    }
+    private static async Task WriteResumesToJsonFiles(List<Resume> resumes)
+    {
+        foreach (var resume in resumes)
+        {
+            string resumeFileName = $"{resume.Title.ToLower().Replace(' ', '_')}.json";
+            await Helpers.WriteToJsonFileAsync(
+                filePath: Path.Combine(DATA_DIRECTORY, resumeFileName),
+                data: resume
+            );
+        }
+    }
+    private static void PrintResumes(List<Resume> resumes)
+    {
+        foreach (var resume in resumes)
+        {
+            Console.ForegroundColor = Helpers.GetRandomConsoleColor();
+            Console.WriteLine(resume);
+            Console.WriteLine("------------------------------");
+            Console.ResetColor();
+        }
+    }
+
+    public static async Task Run()
     {
         Helpers.PrintHeader("Start of Resumes Builder App");
         try
         {
-            var resume01 = BuildResume();
-            var resume02 = BuildResume();
-            var resume03 = BuildResume();
-            Helpers.PrintSuccess("3 random Resumes are generated and built successfully!");
+            int resumesCount = _faker.Random.Int(2, 5);
+            var resumes = GenerateRandomResumes(resumesCount);
+            Helpers.PrintSuccess($"({resumesCount}) random Resumes are generated successfully!");
             Console.WriteLine("------------------------------");
-            foreach (var resume in (List<Resume>)[resume01, resume02, resume03])
-            {
-                Console.ForegroundColor = Helpers.GetRandomConsoleColor();
-                Console.WriteLine(resume);
-                Console.WriteLine("------------------------------");
-                Console.ResetColor();
-            }
+
+            PrintResumes(resumes);
+            Helpers.PrintSuccess($"({resumesCount}) random Resumes are printed successfully!");
+            Console.WriteLine("------------------------------");
+
+            await WriteResumesToJsonFiles(resumes);
+            Helpers.PrintSuccess($"({resumesCount}) random Resumes are written to JSON files successfully!");
+            Console.WriteLine("------------------------------");
         }
         catch (Exception ex)
         {
