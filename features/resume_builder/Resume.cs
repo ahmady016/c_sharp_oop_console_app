@@ -50,6 +50,7 @@ public sealed class Resume : IResumeSection
 
     public int QualificationsCount => _qualifications.QualificationsCount;
     public Qualification? LastQualification => _qualifications.LastQualification;
+    public Qualification? MaxGradeQualification => _qualifications.MaxGradeQualification;
 
     public int SkillsCount => _skills.SkillsCount;
     public Skill? MostProficientSkill => _skills.MostProficientSkill;
@@ -80,14 +81,18 @@ public sealed class Resume : IResumeSection
         var footer = $"""
             Summary:
             {headerDivider}
-            Total Skills: {SkillsCount}
             Total Qualifications: {QualificationsCount}
-            Total Years of Experience: {TotalYearsOfExperience}
             Total Job Experiences: {ExperiencesCount}
+            Total Skills: {SkillsCount}
+            Total Years of Experience: {TotalYearsOfExperience}
             {headerDivider}
             Last Qualification:
             {headerDivider}
             {LastQualification}
+            {headerDivider}
+            Max Grade Qualification:
+            {headerDivider}
+            {MaxGradeQualification}
             {headerDivider}
             Most Proficient Skill:
             {headerDivider}

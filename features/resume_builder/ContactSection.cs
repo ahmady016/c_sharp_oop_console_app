@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ResumesBuilder;
 
 public sealed class ContactSection : IResumeSection
@@ -10,7 +12,7 @@ public sealed class ContactSection : IResumeSection
     public string Address => _address;
     public string PhoneNumber => _phoneNumber;
     public string LinkedInProfileUrl => _linkedInProfileUrl;
-
+    [JsonConstructor]
     public ContactSection(
         string email,
         string address,

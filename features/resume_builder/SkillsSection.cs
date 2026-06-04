@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace ResumesBuilder;
 
@@ -10,6 +10,7 @@ public sealed class Skill
     public string Title => _title;
     public string Description => _description;
     public double ProficiencyLevel => _proficiencyLevel;
+    [JsonConstructor]
     public Skill(
         string title,
         string description,
@@ -49,8 +50,8 @@ public sealed class SkillsSection : IResumeSection
 {
     private readonly List<Skill> _skills;
     public IReadOnlyList<Skill> Skills => _skills.AsReadOnly();
-
-    public SkillsSection(IEnumerable<Skill> skills)
+    [JsonConstructor]
+    public SkillsSection(IReadOnlyList<Skill> skills)
     {
         ArgumentNullException.ThrowIfNull(skills, nameof(skills));
         _skills = [..skills];
@@ -66,12 +67,15 @@ public sealed class SkillsSection : IResumeSection
         _skills.Remove(skill);
     }
 
+    [JsonIgnore]
     public int SkillsCount => _skills.Count;
+    [JsonIgnore]
     public Skill? MostProficientSkill => (
         from skill in _skills
         orderby skill.ProficiencyLevel descending
         select skill
     ).FirstOrDefault();
+    [JsonIgnore]
     public Skill? LeastProficientSkill => (
         from skill in _skills
         orderby skill.ProficiencyLevel ascending

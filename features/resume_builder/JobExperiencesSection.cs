@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ResumesBuilder;
 
 public sealed class JobExperience
@@ -43,7 +45,7 @@ public sealed class JobExperience
                 $"{remainingMonths} {Helpers.GetPluralString("month", remainingMonths)}";
         }
     }
-
+    [JsonConstructor]
     public JobExperience(
         string jobTitle,
         string companyName,
@@ -97,8 +99,8 @@ public sealed class JobExperiencesSection : IResumeSection
 {
     private readonly List<JobExperience> _jobExperiences;
     public IReadOnlyList<JobExperience> JobExperiences => _jobExperiences.AsReadOnly();
-
-    public JobExperiencesSection(IEnumerable<JobExperience> jobExperiences)
+    [JsonConstructor]
+    public JobExperiencesSection(IReadOnlyList<JobExperience> jobExperiences)
     {
         ArgumentNullException.ThrowIfNull(jobExperiences, nameof(jobExperiences));
         _jobExperiences = [..jobExperiences];
@@ -114,18 +116,22 @@ public sealed class JobExperiencesSection : IResumeSection
         _jobExperiences.Remove(jobExperience);
     }
 
+    [JsonIgnore]
     public int ExperiencesCount => _jobExperiences.Count;
+    [JsonIgnore]
     public JobExperience? CurrentJob => (
         from job in JobExperiences
         where job.IsCurrent
         orderby DateTime.Parse(job.StartDate) descending
         select job
     ).FirstOrDefault();
+    [JsonIgnore]
     public JobExperience? MostExperiencedJob => (
         from job in JobExperiences
         orderby job.YearsOfExperience descending
         select job
     ).FirstOrDefault();
+    [JsonIgnore]
     public int TotalYearsOfExperience => JobExperiences.Sum(job => job.YearsOfExperience);
 
     public string Title => "Job Experiences";

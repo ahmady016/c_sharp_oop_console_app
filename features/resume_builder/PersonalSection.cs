@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ResumesBuilder;
 
 public enum MaritalStatus : byte
@@ -34,27 +36,34 @@ public sealed class PersonalSection : IResumeSection
             return age;
         }
     }
-
+    [JsonConstructor]
     public PersonalSection(
         string fullName,
         string birthDate,
         string gender,
         string nationality,
         string nationalIdNumber,
-        MaritalStatus maritalStatus
+        string maritalStatus
     )
     {
-        ArgumentNullException.ThrowIfNull(fullName, nameof(fullName));
-        ArgumentNullException.ThrowIfNull(birthDate, nameof(birthDate));
-        ArgumentNullException.ThrowIfNull(gender, nameof(gender));
-        ArgumentNullException.ThrowIfNull(nationality, nameof(nationality));
-        ArgumentNullException.ThrowIfNull(nationalIdNumber, nameof(nationalIdNumber));
+        if(string.IsNullOrWhiteSpace(fullName))
+            throw new ArgumentException("must provide a full name.");
+        if (string.IsNullOrWhiteSpace(birthDate))
+            throw new ArgumentException("must provide a birth date.");
+        if (string.IsNullOrWhiteSpace(gender))
+            throw new ArgumentException("must provide a gender.");
+        if (string.IsNullOrWhiteSpace(nationality))
+            throw new ArgumentException("must provide a nationality.");
+        if (string.IsNullOrWhiteSpace(nationalIdNumber))
+            throw new ArgumentException("must provide a national ID number.");
+        if (string.IsNullOrWhiteSpace(maritalStatus))
+            throw new ArgumentException("must provide a marital status.");
 
         if (!DateTime.TryParse(birthDate, out _))
             throw new ArgumentException("must provide a valid birth date.");
         if (gender != "male" && gender != "female")
             throw new ArgumentException("Gender must be either 'male' or 'female'.");
-        if (!Enum.IsDefined(maritalStatus))
+        if (!Enum.TryParse(maritalStatus, out MaritalStatus parsedMaritalStatus))
             throw new ArgumentException("Invalid marital status.");
 
         _fullName = fullName;
@@ -62,7 +71,7 @@ public sealed class PersonalSection : IResumeSection
         _gender = gender;
         _nationality = nationality;
         _nationalIdNumber = nationalIdNumber;
-        _maritalStatus = maritalStatus;
+        _maritalStatus = parsedMaritalStatus;
     }
 
     public string Title => "Personal Information";

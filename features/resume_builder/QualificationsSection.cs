@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ResumesBuilder;
 
 public enum SchoolDegree : byte
@@ -22,11 +24,11 @@ public sealed class Qualification
     public string Institution => _institution;
     public string Grade => $"{_grade:F2}%";
     public int GraduationYear => _graduationYear;
-
+    [JsonConstructor]
     public Qualification(
         string degree,
         string institution,
-        double grade,
+        string grade,
         int graduationYear
     )
     {
@@ -36,14 +38,16 @@ public sealed class Qualification
             throw new ArgumentException("Invalid degree.", nameof(degree));
         if (string.IsNullOrWhiteSpace(institution))
             throw new ArgumentException("Institution cannot be null or whitespace.", nameof(institution));
-        if (grade < 0 || grade > 100)
+        if(string.IsNullOrWhiteSpace(grade) || !double.TryParse(grade.TrimEnd('%'), out double _parsedGrade))
+            throw new ArgumentException("Grade cannot be null or whitespace.", nameof(grade));
+        if (_parsedGrade < 0 || _parsedGrade > 100)
             throw new ArgumentException("Grade must be between 0 and 100.", nameof(grade));
         if (graduationYear < 1900 || graduationYear > DateTime.Now.Year + 10)
             throw new ArgumentException("Graduation year must be between 1900 and 10 years in the future.", nameof(graduationYear));
 
         _degree = parsedDegree;
         _institution = institution.Trim();
-        _grade = grade;
+        _grade = _parsedGrade;
         _graduationYear = graduationYear;
     }
     public override string ToString() =>
@@ -68,8 +72,8 @@ public sealed class QualificationsSection : IResumeSection
 {
     private readonly List<Qualification> _qualifications;
     public IReadOnlyList<Qualification> Qualifications => _qualifications.AsReadOnly();
-
-    public QualificationsSection(IEnumerable<Qualification> qualifications)
+    [JsonConstructor]
+    public QualificationsSection(IReadOnlyList<Qualification> qualifications)
     {
         ArgumentNullException.ThrowIfNull(qualifications, nameof(qualifications));
         _qualifications = [..qualifications];
@@ -85,12 +89,15 @@ public sealed class QualificationsSection : IResumeSection
         _qualifications.Remove(qualification);
     }
 
+    [JsonIgnore]
     public int QualificationsCount => _qualifications.Count;
+    [JsonIgnore]
     public Qualification? LastQualification => (
         from q in _qualifications
         orderby q.GraduationYear descending
         select q
     ).FirstOrDefault();
+    [JsonIgnore]
     public Qualification? MaxGradeQualification => (
         from q in _qualifications
         let grade = q.Grade.EndsWith('%') && double.TryParse(q.Grade.TrimEnd('%'), out var g)

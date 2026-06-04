@@ -1,3 +1,4 @@
+#region Resume Builder App Description
 /*
 // Resume Builder App to demonstrate [the favor of composition over multiple inheritance]
 // ______________________________________________________________________________________
@@ -38,6 +39,8 @@ The five design decisions worth understanding
     A caller can never produce a Resume with a missing required section,
     so the guard is at the construction site, not scattered across every consumer.
 */
+#endregion
+
 using Bogus;
 
 namespace ResumesBuilder;
@@ -48,6 +51,9 @@ public static class ResumeManager
     private static readonly string DATA_DIRECTORY = Path.Combine(Helpers.SameDirectory(), "data");
     private static Bogus.DataSets.Name.Gender _gender = default;
     private static string _fullName = default!;
+    private static int ResumesCount => _faker.Random.Int(5, 10);
+    private static List<Resume> _resumes = [];
+    private static List<string> _resumesFilesPaths = [];
     private static PersonalSection PersonalInfo
     {
         get
@@ -62,7 +68,7 @@ public static class ResumeManager
                 gender: _gender.ToString().ToLower(),
                 nationality: _faker.Address.Country().ToLower(),
                 nationalIdNumber: _faker.Phone.PhoneNumber("##############"),
-                maritalStatus: _faker.PickRandom<MaritalStatus>()
+                maritalStatus: _faker.PickRandom<MaritalStatus>().ToString()
             );
         }
     }
@@ -76,7 +82,7 @@ public static class ResumeManager
         degree: _faker.PickRandom<SchoolDegree>().ToString(),
         institution: _faker.Company.CompanyName(),
         graduationYear: _faker.Random.Int(2008, 2025),
-        grade: _faker.Random.Double(17.0, 97.99)
+        grade: $"{_faker.Random.Double(17.0, 97.99)}%"
     );
     private static QualificationsSection Qualifications => new(
         [Qualification, Qualification, Qualification]
@@ -119,6 +125,11 @@ public static class ResumeManager
         );
     }
 
+    private static async Task ReadResumesFromJsonFiles()
+    {
+        foreach (var filePath in _resumesFilesPaths)
+            _resumes.Add(await Helpers.ReadFromJsonFileAsync<Resume>(filePath));
+    }
     private static List<Resume> GenerateRandomResumes(int count = 3)
     {
         if(count < 1 || count > 100)
@@ -152,17 +163,32 @@ public static class ResumeManager
         Helpers.PrintHeader("Start of Resumes Builder App");
         try
         {
-            int resumesCount = _faker.Random.Int(2, 5);
-            var resumes = GenerateRandomResumes(resumesCount);
-            Helpers.PrintSuccess($"({resumesCount}) random Resumes are generated successfully!");
-            Console.WriteLine("------------------------------");
+            _resumesFilesPaths = Helpers.GetJsonFilesPaths(DATA_DIRECTORY);
+            var _resumesCount = _resumesFilesPaths.Count == 0
+                ?  ResumesCount
+                : _resumesFilesPaths.Count;
+            if(_resumesFilesPaths.Count == 0)
+            {
+                Helpers.PrintSuccess($"({_resumesCount}) random Resumes are about to be generated!");
+                _resumes = GenerateRandomResumes(_resumesCount);
+                Helpers.PrintSuccess($"({_resumesCount}) random Resumes are generated successfully!");
+                Console.WriteLine("------------------------------");
 
-            PrintResumes(resumes);
-            Helpers.PrintSuccess($"({resumesCount}) random Resumes are printed successfully!");
-            Console.WriteLine("------------------------------");
-
-            await WriteResumesToJsonFiles(resumes);
-            Helpers.PrintSuccess($"({resumesCount}) random Resumes are written to JSON files successfully!");
+                Helpers.PrintSuccess($"({_resumesCount}) random Resumes are about to start writing to JSON files!");
+                await WriteResumesToJsonFiles(_resumes);
+                Helpers.PrintSuccess($"({_resumesCount}) random Resumes are written to JSON files successfully!");
+                Console.WriteLine("------------------------------");
+            }
+            else
+            {
+                Helpers.PrintSuccess($"({_resumesCount}) random Resumes are about to be loaded from JSON files!");
+                await ReadResumesFromJsonFiles();
+                Helpers.PrintSuccess($"({_resumesCount}) random Resumes are loaded from JSON files successfully!");
+                Console.WriteLine("------------------------------");
+            }
+            Helpers.PrintSuccess($"({_resumesCount}) random Resumes are about to be printed!");
+            PrintResumes(_resumes);
+            Helpers.PrintSuccess($"({_resumesCount}) random Resumes are printed successfully!");
             Console.WriteLine("------------------------------");
         }
         catch (Exception ex)

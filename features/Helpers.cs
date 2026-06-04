@@ -144,6 +144,20 @@ public static partial class Helpers
         return await JsonSerializer.DeserializeAsync<T>(fileStream, _jsonOptions)
             ?? throw new InvalidOperationException("Unable to deserialize JSON file.");
     }
+    // method to list the full paths of all JSON files in the specified directory
+    public static List<string> GetJsonFilesPaths(
+        string directoryPath,
+        bool searchSubdirectories = false
+    )
+    {
+        if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath))
+            return [];
+        var searchOption = searchSubdirectories
+            ? SearchOption.AllDirectories
+            : SearchOption.TopDirectoryOnly;
+        try { return [..Directory.EnumerateFiles(directoryPath, "*.json", searchOption)]; }
+        catch (UnauthorizedAccessException) { return []; }
+    }
 
     // method to randomly pick one value from a collection
     public static T PickOne<T>(IEnumerable<T> collection) =>
