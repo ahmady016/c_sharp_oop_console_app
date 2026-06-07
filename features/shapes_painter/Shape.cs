@@ -11,6 +11,7 @@ namespace ShapesPainter;
 public abstract class Shape
 {
     // private shared readonly fields
+    private readonly string _id;
     private readonly string _name;
     private readonly int _sides;
     private readonly double _sideSize; // in pixels
@@ -18,11 +19,13 @@ public abstract class Shape
     private readonly float _penThickness;
 
     // public shared getter only properties
+    public string Id => _id;
     public string Name => _name;
     public int Sides => _sides;
     public double SideSize => _sideSize;
     public Color ShapeColor => _color;
     public float PenThickness => _penThickness;
+    public string FullName => $"{Name.ToLower()}_shape_{Id.ToLower()}";
 
     // parameterized constructor to initialize the readonly fields
     // and do the input validation to insure constructing a valid shape
@@ -43,6 +46,7 @@ public abstract class Shape
         if(penThickness < 0.25 || penThickness > 10)
             throw new ArgumentOutOfRangeException(nameof(penThickness), "Pen thickness must be between 0.25 and 10.");
 
+        _id = Helpers.GenerateDigitsOnlyId(11);
         _name = name;
         _sides = sides;
         _sideSize = sideSize;
@@ -67,7 +71,7 @@ public abstract class Shape
     public abstract double Area();
     public abstract double Perimeter();
 
-    private readonly string DATA_DIRECTORY = Path.Combine(Helpers.SameDirectory(), "data");
+    private readonly string IMAGES_DIRECTORY = Path.Combine(Helpers.SameDirectory(), "images");
 
     [SupportedOSPlatform("windows")]
     private void DrawLabel(Graphics g)
@@ -126,8 +130,8 @@ public abstract class Shape
             throw new PlatformNotSupportedException();
 
         // create the data directory if it doesn't exist
-        if(!Directory.Exists(DATA_DIRECTORY))
-            Directory.CreateDirectory(DATA_DIRECTORY);
+        if(!Directory.Exists(IMAGES_DIRECTORY))
+            Directory.CreateDirectory(IMAGES_DIRECTORY);
 
         // create the canvas with high-quality rendering settings and white background
         using var bmp = new Bitmap(CanvasWidth, CanvasHeight);
@@ -144,18 +148,18 @@ public abstract class Shape
         DrawLabel(g);
 
         // save to PNG
-        string path = Path.Combine(DATA_DIRECTORY, $"{Name.Replace(" ", "_")}.png");
+        string path = Path.Combine(IMAGES_DIRECTORY, $"{FullName}.png");
         bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
 
         // console output
         Console.ForegroundColor = ConsoleColor.Gray;
-        Console.WriteLine($"  ✓  {Name,-18} saved to → .\\data\\{Path.GetFileName(path)}");
+        Console.WriteLine($" ✓ {Name,-18} saved to → .\\images\\{Path.GetFileName(path)}");
         Console.ResetColor();
     }
 
     public override string ToString() =>
         $"{Name} | Sides: {Sides} | Side: {SideSize:F1}px | " +
         $"Color: {ShapeColor.Name} | Pen: {PenThickness}px | " +
-        $"Area: {Area():F2} | Perimeter: {Perimeter():F2}";
+        $"Area: ({Area():F2}) | Perimeter: ({Perimeter():F2})";
 
 }

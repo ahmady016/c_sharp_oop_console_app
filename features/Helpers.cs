@@ -1,12 +1,17 @@
 using System.Text;
 using System.Text.Json;
-using System.Net.Mail;
-using System.Text.RegularExpressions;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
+using System.Net.Mail;
+using Bogus;
 
 public static partial class Helpers
 {
+    // Bogus Faker instance
+    private static readonly Faker _faker = new();
+    // string of all digits
+    private static readonly string _digits = "0123456789";
     // json serialization global options
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -21,19 +26,28 @@ public static partial class Helpers
             new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
         },
     };
-    // method to generate random unique id with the given length
+
+    // method to generate random digits only phone number with the given length
+    public static string GenerateDigitsOnlyPhoneNumber(int length = 11) =>
+        _faker.Phone.PhoneNumber(new string('#', length));
+    // method to generate random digits id with the given length
+    public static string GenerateDigitsOnlyId(int length = 8) =>
+        new([..from _ in Enumerable.Repeat('_', length) select PickOne(_digits)]);
+
+    // method to generate random unique characters id with the given length
     // using Base62/Base36 Character Pool
     public static string GenerateId(int length = 8)
     {
         if (length <= 0)
             throw new ArgumentException("Length must be greater than 0.");
 
-        const string CHARACTERS = "ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
+        const string CHARACTERS = "ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789";
         StringBuilder id = new(length);
         for (int i = 0; i < length; i++)
             id.Append(CHARACTERS[Random.Shared.Next(CHARACTERS.Length)]);
         return id.ToString();
     }
+
     // method to generating CSS/web-compatible hex color string v1
     public static string GenerateHexColorV1()
     {

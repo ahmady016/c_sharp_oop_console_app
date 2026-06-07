@@ -1,12 +1,13 @@
 /*
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║                           SHAPES PAINTER APP                               ║
-// ║                demonstrating OOP inheritance with                          ║
-// ║        System.Drawing, bitmap rendering and saving as png images           ║
-// ║  Abstract base: Shape, RegularPolygon                                      ║
-// ║  Children: Triangle, Square, Rectangle,                                    ║
-// ║            Pentagon, Hexagon, Heptagon, Octagon, Circle, Oval              ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════╗
+║                           SHAPES PAINTER APP                               ║
+║                demonstrating OOP inheritance with                          ║
+║        System.Drawing, bitmap rendering and saving as png images           ║
+║  Abstract base: Shape, RegularPolygon                                      ║
+║  Concrete Children: Triangle, Square, Rectangle,                           ║
+║            Pentagon, Hexagon, Heptagon, Octagon,                           ║
+║            Circle, Oval                                                    ║
+╚══════════════════════════════════════════════════════════════════════════╝
 // Full inheritance hierarchy
 // ——————————————————————————
 Shape -> abstract base define all shared
@@ -43,9 +44,9 @@ Polymorphism    ->  List<Shape> holds all 9 types; shape.Draw() dispatches the r
     Drawing internals hidden inside each class; callers only see Draw(), Area(), Perimeter().
 3. Template method pattern inside Draw() Method:
     The base Draw() owns the full pipeline — bitmap, anti-aliasing, labelling, saving.
-    It calls DrawOnGraphics(g) which is virtual.
-    Polygon shapes override GetPoints() and let the default DrawOnGraphics handle fill + stroke.
-    Circle and Oval override DrawOnGraphics directly because they have no points
+    It calls PaintOnGraphics(g) which is virtual.
+    Polygon shapes override GetPoints() and let the default PaintOnGraphics handle fill + stroke.
+    Circle and Oval override PaintOnGraphics directly because they have no points
     and they use g.DrawEllipse. Neither path breaks the pipeline.
 4. Square and Rectangle are direct (Shape) children not (RegularPolygon) children:
     A square has 4 equal sides but its area formula (s²) and its point generation (simple corner math)
@@ -136,13 +137,12 @@ public static class ShapesManager
         Console.WriteLine($"  {new string('─', 70)}");
         Console.ResetColor();
 
-
         // ── polymorphic Draw() call — each shape renders itself ──────────
         if (OperatingSystem.IsWindows())
         {
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("  Drawing shapes → saving PNGs to ./data/");
+            Console.WriteLine("  Drawing shapes → saving PNGs to ./images/");
             Console.ResetColor();
             Console.WriteLine();
             foreach (var shape in shapes)

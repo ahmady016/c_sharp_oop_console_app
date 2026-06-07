@@ -9,5 +9,5 @@ public sealed class Pentagon : RegularPolygon
         double sideSize,
         Color? color,
         float penThickness
-    ) : base("Pentagon", 3, sideSize, color, penThickness) { }
+    ) : base("Pentagon", 5, sideSize, color, penThickness) { }
 }
