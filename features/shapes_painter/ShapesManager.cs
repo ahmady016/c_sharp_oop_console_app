@@ -70,6 +70,7 @@ public record ShapeTypeStats
 );
 public static class ShapesManager
 {
+    private static readonly string DATA_DIRECTORY = Path.Combine(Helpers.SameDirectory(), "data");
     private static readonly string[] _shapesTypes = ["Triangle", "Square", "Rectangle", "Pentagon", "Hexagon", "Heptagon", "Octagon", "Circle", "Oval"];
 
     private static Shape GetRandomShape(string shapeType)
@@ -223,7 +224,32 @@ public static class ShapesManager
             Console.WriteLine($"  {shapeType,-26} {stats.Count,5} {stats.TotalArea,12:F2} {stats.TotalPerimeter,12:F2}");
         Console.ResetColor();
     }
-    public static void Run()
+    private static async Task WriteShapesToJsonFiles(List<Shape> shapes)
+    {
+        ArgumentNullException.ThrowIfNull(shapes, nameof(shapes));
+        if(shapes.Count == 0)
+            throw new ArgumentException("must have at least one shape.", nameof(shapes));
+
+        if(!Directory.Exists(DATA_DIRECTORY))
+            Directory.CreateDirectory(DATA_DIRECTORY);
+
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("  writing shapes to JSON file ...");
+        Console.WriteLine($"  {new string('─', 70)}");
+        Console.ResetColor();
+
+        foreach (var shape in shapes)
+            await Helpers.WriteToJsonFileAsync(
+                Path.Combine(DATA_DIRECTORY, $"{shape.FullName}.json"),
+                shape
+            );
+
+        Console.ForegroundColor = ConsoleColor.Gray;
+        Console.WriteLine("  shapes are written to JSON file successfully ...");
+        Console.ResetColor();
+    }
+    public static async Task Run()
     {
         try
         {
@@ -245,6 +271,8 @@ public static class ShapesManager
             PrintPerFamilyStats(shapes);
             // ── print stats by type ───────────────────────────────────────────────
             PrintPerTypeStats(shapes);
+            // ── write shapes to json file ────────────────────────────────────────────────
+            await WriteShapesToJsonFiles(shapes);
             // ── print app footer ────────────────────────────────────────────────────────────
             Helpers.PrintFooter("Shapes Painter App Completed ...");
         }

@@ -30,17 +30,18 @@ public sealed class Circle : Shape
         float y  = CenterY - r;
         float d  = r * 2;
 
-        using var fill = new SolidBrush(Color.FromArgb(80, ShapeColor));
-        using var pen  = new Pen(ShapeColor, PenThickness);
+        var shapeColor = Color.FromName(ShapeColor);
+        using var fill = new SolidBrush(Color.FromArgb(80, shapeColor));
+        using var pen  = new Pen(shapeColor, PenThickness);
 
         g.FillEllipse(fill, x, y, d, d);
         g.DrawEllipse(pen,  x, y, d, d);
 
         // center dot
-        g.FillEllipse(new SolidBrush(ShapeColor), CenterX - 3, CenterY - 3, 6, 6);
+        g.FillEllipse(new SolidBrush(shapeColor), CenterX - 3, CenterY - 3, 6, 6);
 
         // radius line
-        using var dashPen = new Pen(Color.FromArgb(150, ShapeColor), 1f)
+        using var dashPen = new Pen(Color.FromArgb(150, shapeColor), 1f)
                             { DashStyle = DashStyle.Dash };
         g.DrawLine(dashPen, CenterX, CenterY, CenterX + r, CenterY);
     }

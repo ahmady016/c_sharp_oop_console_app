@@ -40,18 +40,19 @@ public sealed class Oval : Shape
         float x  = CenterX - rx;
         float y  = CenterY - ry;
 
-        using var fill = new SolidBrush(Color.FromArgb(80, ShapeColor));
-        using var pen  = new Pen(ShapeColor, PenThickness);
+        var shapeColor = Color.FromName(ShapeColor);
+        using var fill = new SolidBrush(Color.FromArgb(80, shapeColor));
+        using var pen  = new Pen(shapeColor, PenThickness);
 
         g.FillEllipse(fill, x, y, rx * 2, ry * 2);
         g.DrawEllipse(pen,  x, y, rx * 2, ry * 2);
 
         // axes lines
-        using var dashPen = new Pen(Color.FromArgb(150, ShapeColor), 1f)
+        using var dashPen = new Pen(Color.FromArgb(150, shapeColor), 1f)
                             { DashStyle = DashStyle.Dash };
         g.DrawLine(dashPen, CenterX - rx, CenterY, CenterX + rx, CenterY); // major
         g.DrawLine(dashPen, CenterX, CenterY - ry, CenterX, CenterY + ry); // minor
-        g.FillEllipse(new SolidBrush(ShapeColor), CenterX - 3, CenterY - 3, 6, 6);
+        g.FillEllipse(new SolidBrush(shapeColor), CenterX - 3, CenterY - 3, 6, 6);
     }
 
     public static Oval CreateRandom() => new(

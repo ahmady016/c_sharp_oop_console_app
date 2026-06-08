@@ -2,7 +2,7 @@
 {
     static async Task Main()
     {
-        ShapesPainter.ShapesManager.Run();
+        await ShapesPainter.ShapesManager.Run();
         // await ResumesBuilder.ResumeManager.Run();
         // HttpErrors.HttpErrorsManager.Run();
         // await HotelManagement.HotelManager.Run();

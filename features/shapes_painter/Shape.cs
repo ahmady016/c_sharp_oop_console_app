@@ -23,8 +23,8 @@ public abstract class Shape
     public string Name => _name;
     public int Sides => _sides;
     public double SideSize => _sideSize;
-    public Color ShapeColor => _color;
-    public float PenThickness => _penThickness;
+    public string ShapeColor => _color.Name;
+    public float PenThickness => (float) Math.Round(_penThickness, 2, MidpointRounding.AwayFromZero);
     public string FullName => $"{Name.ToLower()}_shape_{Id.ToLower()}";
 
     // parameterized constructor to initialize the readonly fields
@@ -104,8 +104,8 @@ public abstract class Shape
         var pts = GetPoints();
         if (pts.Length == 0) return;
 
-        using var fill = new SolidBrush(Color.FromArgb(80, ShapeColor));
-        using var pen  = new Pen(ShapeColor, PenThickness);
+        using var fill = new SolidBrush(Color.FromArgb(80, _color));
+        using var pen  = new Pen(_color, PenThickness);
 
         pen.LineJoin = LineJoin.Round;
 
@@ -114,7 +114,7 @@ public abstract class Shape
 
         // draw vertices
         foreach (var p in pts)
-            g.FillEllipse(new SolidBrush(ShapeColor), p.X - 3, p.Y - 3, 6, 6);
+            g.FillEllipse(new SolidBrush(_color), p.X - 3, p.Y - 3, 6, 6);
     }
 
     // ── concrete Draw — shared rendering pipeline ─────────────────────────
@@ -159,7 +159,7 @@ public abstract class Shape
 
     public override string ToString() =>
         $"{Name} | Sides: {Sides} | Side: {SideSize:F1}px | " +
-        $"Color: {ShapeColor.Name} | Pen: {PenThickness}px | " +
+        $"Color: {ShapeColor} | Pen: {PenThickness}px | " +
         $"Area: ({Area():F2}) | Perimeter: ({Perimeter():F2})";
 
 }
