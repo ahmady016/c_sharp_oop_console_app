@@ -58,17 +58,101 @@ Polymorphism    ->  List<Shape> holds all 9 types; shape.Draw() dispatches the r
     on the same List<Shape> all working against Area() and Perimeter()
     without knowing the concrete type.
 */
-using System.Drawing;
+using System.Collections.Frozen;
 
 namespace ShapesPainter;
 
+public record ShapeTypeStats
+(
+    int Count,
+    double TotalArea,
+    double TotalPerimeter
+);
 public static class ShapesManager
 {
-    private static void PrintShapesStats(List<Shape> shapes)
+    private static readonly string[] _shapesTypes = ["Triangle", "Square", "Rectangle", "Pentagon", "Hexagon", "Heptagon", "Octagon", "Circle", "Oval"];
+
+    private static Shape GetRandomShape(string shapeType)
+    {
+        if(string.IsNullOrWhiteSpace(shapeType) || !_shapesTypes.Contains(shapeType))
+            throw new ArgumentException($"({shapeType}) is not supported shape type.");
+
+        return shapeType switch
+        {
+            "Triangle" => Triangle.CreateRandom(),
+            "Square"   => Square.CreateRandom(),
+            "Pentagon" => Pentagon.CreateRandom(),
+            "Hexagon"  => Hexagon.CreateRandom(),
+            "Heptagon" => Heptagon.CreateRandom(),
+            "Octagon"  => Octagon.CreateRandom(),
+            "Rectangle" => Rectangle.CreateRandom(),
+            "Circle"   => Circle.CreateRandom(),
+            "Oval"     => Oval.CreateRandom(),
+            _ => throw new ArgumentException($"({shapeType}) is not supported shape type."),
+        };
+    }
+    private static List<Shape> GetRandomShapes(int count)
+    {
+        if (count < 3 || count > 100)
+            throw new ArgumentOutOfRangeException(nameof(count), "Count must be between 3 and 100.");
+
+        return [..
+            from i in Enumerable.Range(0, count)
+            select GetRandomShape(Helpers.PickOne(_shapesTypes.Shuffle()))
+        ];
+    }
+    private static List<Shape> GetFixedShapes() => [
+        Triangle.CreateRandom(),
+        Square.CreateRandom(),
+        Rectangle.CreateRandom(),
+        Pentagon.CreateRandom(),
+        Hexagon.CreateRandom(),
+        Heptagon.CreateRandom(),
+        Octagon.CreateRandom(),
+        Circle.CreateRandom(),
+        Oval.CreateRandom()
+    ];
+    private static void DrawShapes(List<Shape> shapes)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine("  Drawing shapes → saving PNGs to ./images/");
+            Console.ResetColor();
+            Console.WriteLine();
+            // ── polymorphic Draw() call — each shape renders itself ──────────
+            foreach (var shape in shapes)
+                shape.Draw();
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("  Skipping drawing: Shape.Draw() is supported only on Windows.");
+            Console.ResetColor();
+            Console.WriteLine();
+        }
+    }
+    private static void PrintShapesSummary(List<Shape> shapes)
+    {
+        // ── print summary table header ──────────────────────────────────────────
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine();
+        Console.WriteLine($"  {"Shape",-18} {"Sides",10} {"SideSize",10} {"Area",10} {"Perimeter",10}");
+        Console.WriteLine($"  {new string('─', 70)}");
+        Console.ResetColor();
+        // ── print each shape details ────────────────────────────────────────────
+        Console.ForegroundColor = ConsoleColor.Gray;
+        foreach (var shape in shapes)
+            Console.WriteLine($"  {shape.Name,-18} {shape.Sides,10} {shape.SideSize,10:F0} {shape.Area(),10:F2} {shape.Perimeter(),10:F2}");
+        Console.WriteLine($"  {new string('─', 70)}");
+        Console.ResetColor();
+    }
+    private static void PrintGeneralStats(List<Shape> shapes)
     {
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine("  ── LINQ aggregations ");
+        Console.WriteLine("  Statistical Aggregations ");
         Console.WriteLine("  ──────────────────────────────────────────────");
         Console.ResetColor();
 
@@ -81,8 +165,10 @@ public static class ShapesManager
         Console.WriteLine($"  Smallest by area : {smallest.Name}  ({smallest.Area():F2})");
         Console.WriteLine($"  Total area       : {totalArea:F2}");
         Console.WriteLine($"  Avg perimeter    : {avgPerimeter:F2}");
-
-        // group by type family
+    }
+    private static void PrintPerFamilyStats(List<Shape> shapes)
+    {
+        // ── group shapes by family ─────────────────────────────────────────────────────
         var grouped = from s in shapes
                     let family = s is Circle or Oval
                         ? "Curved"
@@ -90,77 +176,79 @@ public static class ShapesManager
                             ? "Quadrilateral/Triangle"
                             : "Polygon"
                     group s by family into g
-                    select new { Family = g.Key,
-                                Count  = g.Count(),
-                                TotalArea = g.Sum(x => x.Area()) };
+                    select new {
+                        Family = g.Key,
+                        Count  = g.Count(),
+                        TotalArea = g.Sum(x => x.Area()),
+                        TotalPerimeter = g.Sum(x => x.Perimeter())
+                    };
 
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"  {"Family",-26} {"Count",5} {"Total Area",12}");
-        Console.WriteLine($"  {new string('─', 46)}");
+        Console.WriteLine($"  {"Family",-26} {"Count",5} {"Total Area",12} {"Total Perimeter",12}");
+        Console.WriteLine($"  {new string('─', 70)}");
         Console.ResetColor();
         Console.ForegroundColor = ConsoleColor.Gray;
         foreach (var g in grouped)
-            Console.WriteLine($"  {g.Family,-26} {g.Count,5} {g.TotalArea,12:F2}");
+            Console.WriteLine($"  {g.Family,-26} {g.Count,5} {g.TotalArea,12:F2} {g.TotalPerimeter,12:F2}");
         Console.ResetColor();
     }
+    private static void PrintPerTypeStats(List<Shape> shapes)
+    {
+        var statsPerType = shapes.Aggregate(
+            (
+                from shapeType in _shapesTypes
+                select KeyValuePair.Create(shapeType, new ShapeTypeStats(0, 0.0, 0.0))
+            ).ToDictionary(),
+            (dict, shape) =>
+            {
+                var stats = dict[shape.Name];
+                dict[shape.Name] = stats with {
+                    Count = stats.Count + 1,
+                    TotalArea = stats.TotalArea + shape.Area(),
+                    TotalPerimeter = stats.TotalPerimeter + shape.Perimeter()
+                };
+                return dict;
+            },
+            dict => dict.ToFrozenDictionary()
+        );
 
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine($"  {"Type",-26} {"Count",5} {"Total Area",12} {"Total Perimeter",12}");
+        Console.WriteLine($"  {new string('─', 70)}");
+        Console.ResetColor();
+        Console.ForegroundColor = ConsoleColor.Gray;
+        foreach (var (shapeType, stats) in statsPerType)
+            Console.WriteLine($"  {shapeType,-26} {stats.Count,5} {stats.TotalArea,12:F2} {stats.TotalPerimeter,12:F2}");
+        Console.ResetColor();
+    }
     public static void Run()
     {
-        // ── print app header ──────────────────────────────────────────
-        Helpers.PrintHeader("Shapes Painter App Started ...");
-
-        // ── build one shape from each type of shapes ─────────────────────────────────────────────
-        List<Shape> shapes =
-        [
-            new Triangle (sideSize: 150, color: Color.CornflowerBlue,           penThickness: 2.5f),
-            new Square   (sideSize: 130, color: Color.MediumSeaGreen,           penThickness: 2f),
-            new Rectangle(width: 200, height: 120, color: Color.Tomato,         penThickness: 2f),
-            new Pentagon (sideSize: 100, color: Color.MediumOrchid,             penThickness: 2f),
-            new Hexagon  (sideSize:  90, color: Color.DarkGoldenrod,            penThickness: 2f),
-            new Heptagon (sideSize:  85, color: Color.SteelBlue,                penThickness: 2f),
-            new Octagon  (sideSize:  80, color: Color.IndianRed,                penThickness: 2f),
-            new Circle   (radius:   130, color: Color.DarkCyan,                 penThickness: 2.5f),
-            new Oval     (radiusX: 150, radiusY: 90, color: Color.DarkMagenta,  penThickness: 2f),
-        ];
-
-        // ── print summary table header ──────────────────────────────────────────
-        Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"  {"Shape",-18} {"Sides",10} {"SideSize",10} {"Area",10} {"Perimeter",10}");
-        Console.WriteLine($"  {new string('─', 70)}");
-        Console.ResetColor();
-
-        // ── print each shape summary ──────────────────────────────────────────
-        Console.ForegroundColor = ConsoleColor.Gray;
-        foreach (var shape in shapes)
-            Console.WriteLine($" {shape.Name,-18} {shape.Sides,10} {shape.SideSize,10:F0} {shape.Area(),10:F2} {shape.Perimeter(),10:F2}");
-        Console.WriteLine($"  {new string('─', 70)}");
-        Console.ResetColor();
-
-        // ── polymorphic Draw() call — each shape renders itself ──────────
-        if (OperatingSystem.IsWindows())
+        try
         {
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine("  Drawing shapes → saving PNGs to ./images/");
-            Console.ResetColor();
-            Console.WriteLine();
-            foreach (var shape in shapes)
-                shape.Draw();
+            // ── print app header ────────────────────────────────────────────────────────────
+            Helpers.PrintHeader("Shapes Painter App Started ...");
+            // ── construct one shape from each type ──────────────────────────────────────────
+            var fixedShapes = GetFixedShapes();
+            // ── construct random shapes ─────────────────────────────────────────────────────
+            var randomShapes = GetRandomShapes(27);
+            // ── combine fixed and random shapes ─────────────────────────────────────────────
+            List<Shape> shapes = [..fixedShapes, ..randomShapes];
+            // ── draw all shapes ─────────────────────────────────────────────────────────────
+            DrawShapes(shapes);
+            // ── print all shapes summary ────────────────────────────────────────────────────
+            PrintShapesSummary(shapes);
+            // ── print general stats ──────────────────────────────────────────────────────
+            PrintGeneralStats(shapes);
+            // ── print stats by family ───────────────────────────────────────────────
+            PrintPerFamilyStats(shapes);
+            // ── print stats by type ───────────────────────────────────────────────
+            PrintPerTypeStats(shapes);
+            // ── print app footer ────────────────────────────────────────────────────────────
+            Helpers.PrintFooter("Shapes Painter App Completed ...");
         }
-        else
-        {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("  Skipping drawing: Shape.Draw() is supported only on Windows.");
-            Console.ResetColor();
-            Console.WriteLine();
-        }
-
-        // ── print all shapes stats ──────────────────────────────────────────
-        PrintShapesStats(shapes);
-
-        // ── print app footer ──────────────────────────────────────────
-        Helpers.PrintFooter("Shapes Painter App Completed ...");
+        catch (Exception ex) { Console.WriteLine($"Error: {ex.Message}"); }
     }
 
 }

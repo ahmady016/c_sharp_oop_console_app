@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Net.Mail;
+using System.Drawing;
 using Bogus;
 
 public static partial class Helpers
@@ -12,6 +13,26 @@ public static partial class Helpers
     private static readonly Faker _faker = new();
     // string of all digits
     private static readonly string _digits = "0123456789";
+    // string array of common web colors names
+    private static readonly Color[] _webColors = [
+        // Blues
+        Color.CornflowerBlue, Color.SteelBlue, Color.DodgerBlue,
+        Color.RoyalBlue, Color.DeepSkyBlue, Color.CadetBlue,
+        Color.DarkCyan, Color.LightSeaGreen, Color.MediumTurquoise,
+        // Greens
+        Color.MediumSeaGreen, Color.SeaGreen, Color.ForestGreen,
+        Color.OliveDrab, Color.LimeGreen, Color.YellowGreen,
+        // Reds & Pinks
+        Color.Tomato, Color.IndianRed, Color.Crimson, Color.HotPink, Color.MediumVioletRed,
+        // Purples
+        Color.MediumOrchid, Color.MediumPurple, Color.BlueViolet,
+        Color.DarkMagenta, Color.Purple, Color.RebeccaPurple,
+        // Oranges & Browns
+        Color.DarkOrange, Color.OrangeRed, Color.DarkGoldenrod,
+        Color.Chocolate, Color.SaddleBrown, Color.Sienna,
+        // Neutrals
+        Color.DimGray, Color.SlateGray, Color.DarkSlateGray,
+    ];
     // json serialization global options
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -68,6 +89,8 @@ public static partial class Helpers
         // format with a hashtag prefix and 6-digit hex notation
         return $"#{r:X2}{g:X2}{b:X2}";
     }
+    // method to generate a random color of common web named colors
+    public static Color GetRandomColor() => PickOne(_webColors);
 
     // helper method to get the file path in the same directory as the caller
     // the compiler replaces callerPath with the full path of the caller file at compile time
@@ -277,11 +300,17 @@ public static partial class Helpers
         if (string.IsNullOrEmpty(title.Trim()))
             throw new ArgumentNullException(nameof(title), $"Parameter [{nameof(title)}] is null or empty.");
 
+        string footerTitle = $"{title} Completed Successfully.";
+        int width = Console.WindowWidth - 2;
+        string border = new('═', width);
+        int paddingWidth = (width - footerTitle.Length) / 2;
+        string padding = new(' ', paddingWidth);
+
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine("══════════════════════════════════════════════════════");
-        Console.WriteLine($"{title} Completed Successfully.");
-        Console.WriteLine("══════════════════════════════════════════════════════");
+        Console.WriteLine($"  {border}");
+        Console.WriteLine($"  {padding}{footerTitle}{padding}");
+        Console.WriteLine($"  {border}");
         Console.ResetColor();
     }
     public static void RunScenario(string title, Action scenario)

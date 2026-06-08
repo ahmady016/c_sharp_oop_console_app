@@ -1,10 +1,12 @@
 using System.Drawing;
+using Bogus;
 
 namespace ShapesPainter;
 
 // ── Rectangle 4 sides (width × height) ──────────────────────────────────────────
 public sealed class Rectangle : Shape
 {
+    private static readonly Faker _faker = new();
     private readonly double _width;
     private readonly double _height;
     public Rectangle(
@@ -32,4 +34,10 @@ public sealed class Rectangle : Shape
         ];
     }
 
+    public static Rectangle CreateRandom() => new(
+        width: _faker.Random.Int(180, 360),
+        height: _faker.Random.Int(120, 240),
+        penThickness: _faker.Random.Float(1.25f, 4.25f),
+        color: Helpers.GetRandomColor()
+    );
 }

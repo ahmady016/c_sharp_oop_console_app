@@ -1,12 +1,15 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.Versioning;
+using Bogus;
 
 namespace ShapesPainter;
 
 // ── Circle ───────────────────────────────────────────────────────────────
 public sealed class Circle : Shape
 {
+    private static readonly Faker _faker = new();
+
     private readonly double _radius;
     public Circle(
         double radius,
@@ -42,4 +45,9 @@ public sealed class Circle : Shape
         g.DrawLine(dashPen, CenterX, CenterY, CenterX + r, CenterY);
     }
 
+    public static Circle CreateRandom() => new(
+        radius: _faker.Random.Int(180, 360),
+        color: Helpers.GetRandomColor(),
+        penThickness: _faker.Random.Float(1.25f, 4.25f)
+    );
 }

@@ -1,10 +1,12 @@
 using System.Drawing;
+using Bogus;
 
 namespace ShapesPainter;
 
 // ── Square (4 equal sides) ───────────────────────────────────────────────
 public sealed class Square : Shape
 {
+    private static readonly Faker _faker = new();
     public Square(
         double sideSize,
         Color color,
@@ -24,4 +26,9 @@ public sealed class Square : Shape
         ];
     }
 
+    public static Square CreateRandom() => new(
+        sideSize: _faker.Random.Int(180, 360),
+        penThickness: _faker.Random.Float(1.25f, 4.25f),
+        color: Helpers.GetRandomColor()
+    );
 }

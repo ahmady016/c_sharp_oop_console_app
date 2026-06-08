@@ -1,12 +1,15 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.Versioning;
+using Bogus;
 
 namespace ShapesPainter;
 
 // ── Oval (ellipse) ───────────────────────────────────────────────────────
 public sealed class Oval : Shape
 {
+    private static readonly Faker _faker = new();
+
     private readonly double _radiusX;
     private readonly double _radiusY;
     public Oval(
@@ -51,4 +54,10 @@ public sealed class Oval : Shape
         g.FillEllipse(new SolidBrush(ShapeColor), CenterX - 3, CenterY - 3, 6, 6);
     }
 
+    public static Oval CreateRandom() => new(
+        radiusX: _faker.Random.Int(140, 360),
+        radiusY: _faker.Random.Int(140, 360),
+        penThickness: _faker.Random.Float(1.25f, 4.25f),
+        color: Helpers.GetRandomColor()
+    );
 }

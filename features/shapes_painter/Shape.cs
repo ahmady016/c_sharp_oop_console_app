@@ -55,8 +55,8 @@ public abstract class Shape
     }
 
     // canvas dimensions (subclasses may override)
-    protected virtual int CanvasWidth  => 400;
-    protected virtual int CanvasHeight => 400;
+    protected virtual int CanvasWidth  => 960;
+    protected virtual int CanvasHeight => 960;
     protected virtual int CenterX => CanvasWidth  / 2;
     protected virtual int CenterY => CanvasHeight / 2;
 
@@ -76,22 +76,22 @@ public abstract class Shape
     [SupportedOSPlatform("windows")]
     private void DrawLabel(Graphics g)
     {
-        using var font   = new Font("Segoe UI", 9, FontStyle.Regular);
-        using var bold   = new Font("Segoe UI", 11, FontStyle.Bold);
+        using var font   = new Font("Segoe UI", 12, FontStyle.Regular);
+        using var bold   = new Font("Segoe UI", 14, FontStyle.Bold);
         using var brush  = new SolidBrush(Color.FromArgb(60, 60, 60));
         using var shadow = new SolidBrush(Color.FromArgb(30, 0, 0, 0));
 
         string title = Name;
-        string info  = $"Sides: {Sides}   Side: {SideSize:F0}px";
+        string sides  = $"Sides: ({Sides}) x ({SideSize:F0}px)";
         string area  = $"Area: {Area():F2}";
         string perimeter = $"Perimeter: {Perimeter():F2}";
 
-        float y = CanvasHeight - 72f;
-        g.DrawString(title, bold,  shadow, 11, y + 1);
+        float y = CanvasHeight - 100f;
+        g.DrawString(title, bold,  shadow,  11, y + 1);
         g.DrawString(title, bold,  brush,  10, y);
-        g.DrawString(info,  font,  brush,  10, y + 18);
-        g.DrawString(area,  font,  brush,  10, y + 34);
-        g.DrawString(perimeter, font,  brush,  10, y + 50);
+        g.DrawString(sides,  font,  brush,  12, y + 24);
+        g.DrawString(area,  font,  brush,  12, y + 44);
+        g.DrawString(perimeter, font,  brush,  12, y + 64);
     }
 
     /// <summary>
@@ -153,7 +153,7 @@ public abstract class Shape
 
         // console output
         Console.ForegroundColor = ConsoleColor.Gray;
-        Console.WriteLine($" ✓ {Name,-18} saved to → .\\images\\{Path.GetFileName(path)}");
+        Console.WriteLine($"  ✓ {Name,-18} saved to → .\\images\\{Path.GetFileName(path)}");
         Console.ResetColor();
     }
 
