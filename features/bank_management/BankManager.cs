@@ -8,6 +8,26 @@
 // ║    • Polymorphism   — List<Account> dispatches to the right type           ║
 // ║    • Composition    — Bank Class owns Customers + Accounts                 ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
+The five OOP pillars at work
+============================
+Abstraction — Account is abstract. You can never write new Account(...).
+It defines the contract (Statement, StatementHeader) and leaves the specifics to subclasses.
+BankException is also abstract — callers catch specific exceptions or the root,
+never the abstract base directly.
+Inheritance — two-level chain for accounts: Account → CheckingAccount/LoanAccount.
+Each child inherits all of Account's logic and adds only what makes it different.
+CheckingAccount adds overdraft logic, Deposit() and Withdraw().
+LoanAccount flips the balance to negative and adds MakeRepayment().
+Encapsulation — _balance is private. Nobody outside Account can set it directly.
+The only ways to change it are AdjustBalance() which validate, record the transaction, and maintain invariants.
+Polymorphism — RunMonthlyProcessing() iterates IEnumerable<Account>
+and uses pattern matching to dispatch to the right monthly operation.
+The LINQ summary in BankSummary() calls a.Balance and a.AccountType on every account
+without knowing the concrete type.
+Composition — BankSystem owns dictionaries of Customer and Account.
+It doesn't inherit from either — it has them.
+This is the correct "bank has customers has accounts" model, not a tangled inheritance chain.
+----------------------------------------------------------------------------------------------
 # allow customers to create an account
 # allow customers to deposit money into their account
 # allow customers to withdraw money from their account
