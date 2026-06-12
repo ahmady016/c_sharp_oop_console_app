@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
@@ -43,6 +44,7 @@ public static partial class Helpers
         // tells the serializer to silently skip any JSON property that
         // has no matching constructor parameter or settable property
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         Converters = {
             new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower),
         },
@@ -313,6 +315,13 @@ public static partial class Helpers
         Console.WriteLine($"  {border}");
         Console.ResetColor();
     }
+    public static void PrintSection(string title)
+    {
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.DarkCyan;
+        Console.WriteLine($"  ──── {title} ──────");
+        Console.ResetColor();
+    }
     public static void RunScenario(string title, Action scenario)
     {
         Console.WriteLine();
@@ -332,6 +341,12 @@ public static partial class Helpers
     public static void PrintError(string message)
     {
         Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"  ✗ {message}");
+        Console.ResetColor();
+    }
+    public static void PrintWarning(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
         Console.WriteLine($"  ✗ {message}");
         Console.ResetColor();
     }
