@@ -47,6 +47,10 @@ public sealed class Bank
     // ── computed getter properties ─────────────────────────────────────────────────────
     public int CustomersCount => _customersMap.Count;
     public int AccountsCount => _accountsMap.Count;
+    public decimal TotalDeposits => Math.Round(DepositAccounts.Sum(a => a.Balance), 2, MidpointRounding.AwayFromZero);
+    public decimal TotalLoans => Math.Round(LoanAccounts.Sum(a => a.Balance), 2, MidpointRounding.AwayFromZero);
+    public decimal NetPosition => TotalDeposits - Math.Abs(TotalLoans);
+
     [JsonIgnore]
     public IReadOnlyList<Account> ActiveAccounts => [..
         from account in _accountsMap.Values
@@ -74,14 +78,13 @@ public sealed class Bank
         orderby account.Balance descending
         select account
     ];
-    public decimal TotalDeposits => Math.Round(DepositAccounts.Sum(a => a.Balance), 2, MidpointRounding.AwayFromZero);
     [JsonIgnore]
     public IReadOnlyList<LoanAccount> LoanAccounts => [..
         from account in _accountsMap.Values.OfType<LoanAccount>()
         orderby account.Balance descending
         select account
     ];
-    public decimal TotalLoans => Math.Round(LoanAccounts.Sum(a => a.Balance), 2, MidpointRounding.AwayFromZero);
+
     public FrozenDictionary<string, AccountsPerType> AccountsPerType => Accounts.Aggregate(
         new Dictionary<string, AccountsPerType>() {
             { "Checking Account", new AccountsPerType("Checking", 0, 0) },
@@ -137,6 +140,7 @@ public sealed class Bank
     );
 
     // ── reporting ──────────────────────────────────────────────────────────────────────
+    [JsonIgnore]
     public string PortfolioSummary
     {
         get
@@ -157,7 +161,7 @@ public sealed class Bank
 
             reportBuilder.AppendLine($"  Total deposits : {TotalDeposits,12:C}");
             reportBuilder.AppendLine($"  Total loans    : {TotalLoans,12:C}");
-            reportBuilder.AppendLine($"  Net position   : {TotalDeposits - Math.Abs(TotalLoans),12:C}");
+            reportBuilder.AppendLine($"  Net position   : {NetPosition,12:C}");
             reportBuilder.AppendLine();
 
             reportBuilder.AppendLine($"  {"Account Type",-22} {"Count",5} {"Total Balance",14}");

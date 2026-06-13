@@ -41,7 +41,6 @@ This is the correct "bank has customers has accounts" model, not a tangled inher
 # note: checking account closed only when the balance is $0
 */
 using Bogus;
-using Bogus.Extensions.Belgium;
 
 namespace BankManagement;
 
@@ -113,6 +112,7 @@ public static class BankManager
     private static void OpenBanksAccounts(List<Bank> banks)
     {
         foreach (var bank in banks)
+        {
             foreach (var customer in bank.Customers)
             {
                 string accountType = Helpers.PickOne(_accountTypes);
@@ -126,6 +126,14 @@ public static class BankManager
                     initialDeposit: initialDeposit
                 );
             }
+            foreach(var customer in bank.Customers.Shuffle().Take(3))
+                OpenBankAccount(
+                    bank: bank,
+                    customerId: customer.Id,
+                    accountType: "CHECKING",
+                    initialDeposit: _faker.Random.Decimal(12000, 120_000)
+                );
+        }
     }
 
     private static void DoBankOperations(List<Bank> banks)
@@ -134,6 +142,7 @@ public static class BankManager
         decimal amount;
         foreach (var bank in banks)
         {
+            // random deposit, withdraw and transfer
             var checkingAccounts = bank.Accounts.OfType<CheckingAccount>();
             foreach (var checkingAccount in checkingAccounts)
             {
@@ -177,14 +186,28 @@ public static class BankManager
                 }
             }
 
+            // make random amount and random numbers of repayments
             var loanAccounts = bank.Accounts.OfType<LoanAccount>();
             foreach (var loanAccount in loanAccounts)
             {
-                amount = _faker.Random.Decimal(loanAccount.PaymentAmount, loanAccount.PaymentAmount * 2);
-                Do(
-                    $"Repay {amount:C2} from account ({loanAccount.AccountId})",
-                    () => loanAccount.MakeRepayment(amount)
-                );
+                foreach (var _ in Enumerable.Range(0, _faker.Random.Int(2,5)))
+                {
+                    amount = _faker.Random.Decimal(loanAccount.PaymentAmount, loanAccount.PaymentAmount * 2);
+                    Do(
+                        $"Repay {amount:C2} from account ({loanAccount.AccountId})",
+                        () => loanAccount.MakeRepayment(amount)
+                    );
+                }
+            }
+
+            // choose three loanAccounts to pay all debt (balance became 0)
+            foreach(var loanAccount in loanAccounts.Shuffle().Take(3))
+            {
+                while(loanAccount.Balance < 0)
+                    Do(
+                        $"Repay {loanAccount.PaymentAmount:C2} from account ({loanAccount.AccountId})",
+                        () => loanAccount.MakeRepayment(loanAccount.PaymentAmount)
+                    );
             }
         }
     }
