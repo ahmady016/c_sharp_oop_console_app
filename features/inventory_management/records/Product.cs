@@ -1,0 +1,15 @@
+namespace InventoryManagement;
+
+public record Product(
+    string          ProductId,
+    string          Sku,
+    string          Name,
+    string          Description,
+    decimal         ListPrice, // recommended selling price
+    ProductCategory Category,
+    string          Unit // unit of measure (pcs, kg, litres)
+)
+{
+    public override string ToString()
+        => $"[{Sku}] {Name,-26} {Category,-14} List: {ListPrice,8:C}";
+}
