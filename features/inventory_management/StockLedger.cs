@@ -2,6 +2,7 @@ namespace InventoryManagement;
 
 public interface IStockLedger
 {
+    public IReadOnlyList<StockMovement> Movements { get; }
     int ProductLevel(string productId, string? warehouse = null);
     decimal StockIn(string productId, int quantity, decimal unitCost, string warehouse, string reference, string by);
     decimal StockOut(string productId, int quantity, string warehouse, string reference, string by);
@@ -28,16 +29,21 @@ public sealed class StockLedger : IStockLedger
     }
 
     private void RecordMovement(
-        string productId, MovementType type, int qty,
-        decimal cost, decimal price,
-        string warehouse, string reference, string by
+        string productId,
+        MovementType type,
+        int quantity,
+        decimal cost,
+        decimal price,
+        string warehouse,
+        string reference,
+        string by
     )
     {
         _movements.Add(new StockMovement(
             MovementId: $"MOV-{++_seq:D9}",
             ProductId: productId,
             Type: type,
-            Quantity: qty,
+            Quantity: quantity,
             UnitCost: cost,
             UnitPrice: price,
             Warehouse: warehouse,
@@ -70,9 +76,18 @@ public sealed class StockLedger : IStockLedger
     {
         InitializeCostBuckets(productId, warehouse);
         _costsMap[productId][warehouse].Add(
-            new CostLayer(reference, qty, unitCost, DateTime.Now)
+            new CostLayer(reference, quantity, unitCost, DateTime.Now)
         );
-        RecordMovement(productId, MovementType.PurchaseIn, qty, unitCost, 0m, warehouse, reference, by);
+        RecordMovement(
+            productId: productId,
+            type: MovementType.PurchaseIn,
+            quantity: quantity,
+            cost: unitCost,
+            price: 0m,
+            warehouse: warehouse,
+            reference: reference,
+            by: by
+        );
         return unitCost;
     }
 
@@ -109,7 +124,7 @@ public sealed class StockLedger : IStockLedger
         RecordMovement(
             productId: productId,
             type: MovementType.SaleOut,
-            qty: quantity,
+            quantity: quantity,
             cost: avgCost,
             price: 0m,
             warehouse: warehouse,
@@ -175,7 +190,7 @@ public sealed class StockLedger : IStockLedger
         RecordMovement(
             productId: productId,
             type: MovementType.Adjustment,
-            qty: Math.Abs(delta),
+            quantity: Math.Abs(delta),
             cost: productCost,
             price: 0m,
             warehouse: warehouse,

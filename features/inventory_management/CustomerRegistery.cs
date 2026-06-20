@@ -4,7 +4,9 @@ public interface ICustomerRegistry
 {
     public IReadOnlyList<Customer> All { get; }
     public Customer Add(
-        string name, string email, string phone,
+        string name,
+        string email,
+        string mobile,
         CustomerTier tier = CustomerTier.Standard,
         decimal discountRate = 0m
     );
@@ -18,7 +20,9 @@ public sealed class CustomerRegistry : ICustomerRegistry
     public IReadOnlyList<Customer> All => [.._customersMap.Values.OrderBy(c => c.Name)];
 
     public Customer Add(
-        string name, string email, string phone,
+        string name,
+        string email,
+        string mobile,
         CustomerTier tier = CustomerTier.Standard,
         decimal discountRate = 0m
     )
@@ -27,7 +31,7 @@ public sealed class CustomerRegistry : ICustomerRegistry
             CustomerId: $"CUS-{++_seq:D6}",
             Name: name,
             Email: email,
-            Phone: phone,
+            Phone: mobile,
             Tier: tier,
             DiscountRate: discountRate
         );

@@ -6,7 +6,7 @@ public interface IPurchaseManager
     PurchaseOrder Create (
         string supplierId,
         string supplierName,
-        IEnumerable<(string ProductId, string Name, string Sku, int Quantity, decimal Cost)> items
+        IEnumerable<(string ProductId, string Name, string Sku, int Quantity, decimal UnitCost)> items
     );
     PurchaseOrder Receive(
         string orderId,
@@ -36,7 +36,7 @@ public sealed class PurchaseManager : IPurchaseManager
     public PurchaseOrder Create(
         string supplierId,
         string supplierName,
-        IEnumerable<(string ProductId, string Name, string Sku, int Quantity, decimal Cost)> items
+        IEnumerable<(string ProductId, string Name, string Sku, int Quantity, decimal UnitCost)> items
     )
     {
         var orderItems = items
@@ -46,7 +46,7 @@ public sealed class PurchaseManager : IPurchaseManager
                 Sku: item.Sku,
                 QtyOrdered: item.Quantity,
                 QtyReceived: 0,
-                UnitCost: item.Cost
+                UnitCost: item.UnitCost
             ))
             .ToList();
         var newPurchaseOrder = new PurchaseOrder(
