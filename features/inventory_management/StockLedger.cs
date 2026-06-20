@@ -3,8 +3,8 @@ namespace InventoryManagement;
 public interface IStockLedger
 {
     int ProductLevel(string productId, string? warehouse = null);
-    decimal StockIn(string productId, int qty, decimal unitCost, string warehouse, string reference, string by);
-    decimal StockOut(string productId, int qty, string warehouse, string reference, string by);
+    decimal StockIn(string productId, int quantity, decimal unitCost, string warehouse, string reference, string by);
+    decimal StockOut(string productId, int quantity, string warehouse, string reference, string by);
     decimal AvgCost(string productId);
     void Adjust(string productId, int delta, string warehouse, string note, string by);
     IReadOnlyList<StockMovement> History(string productId);
@@ -64,7 +64,7 @@ public sealed class StockLedger : IStockLedger
     }
 
     public decimal StockIn(
-        string productId, int qty, decimal unitCost,
+        string productId, int quantity, decimal unitCost,
         string warehouse, string reference, string by
     )
     {

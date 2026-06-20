@@ -20,15 +20,15 @@ public record PurchaseOrder(
     string           OrderId,
     string           SupplierId,
     string           SupplierName,
-    List<PurchaseItem> Lines,
+    List<PurchaseItem> Items,
     PurchaseStatus   Status,
     PaymentStatus    PaymentStatus,
     DateTime         CreatedAt,
     DateTime?        ReceivedAt
 )
 {
-    public decimal TotalCost => Lines.Sum(l => l.Subtotal);
-    public decimal ReceivedCost => Lines.Sum(l => l.QtyReceived * l.UnitCost);
+    public decimal TotalCost => Items.Sum(l => l.Subtotal);
+    public decimal ReceivedCost => Items.Sum(l => l.QtyReceived * l.UnitCost);
     public override string ToString() =>
         $"[{OrderId}]  {SupplierName,-22}  {Status,-16}  " +
         $"Total:{TotalCost,10:C}  Payment:{PaymentStatus}";

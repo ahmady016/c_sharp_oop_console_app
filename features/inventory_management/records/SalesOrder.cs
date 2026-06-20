@@ -26,7 +26,7 @@ public record SalesOrder(
     string         OrderId,
     string         CustomerId,
     string         CustomerName,
-    List<SaleItem> Lines,
+    List<SaleItem> Items,
     SaleStatus     Status,
     PaymentStatus  PaymentStatus,
     decimal        DiscountRate,
@@ -35,8 +35,8 @@ public record SalesOrder(
     DateTime?      DeliveredAt
 )
 {
-    public decimal TotalCost => Lines.Sum(l => l.Cost);
-    public decimal GrossRevenue => Lines.Sum(l => l.Revenue);
+    public decimal TotalCost => Items.Sum(l => l.Cost);
+    public decimal GrossRevenue => Items.Sum(l => l.Revenue);
     public decimal GrossProfit => GrossRevenue - TotalCost;
     public decimal ProfitMargin => GrossRevenue == 0 ? 0 : GrossProfit / GrossRevenue;
 
