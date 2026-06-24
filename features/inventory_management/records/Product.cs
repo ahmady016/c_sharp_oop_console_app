@@ -10,6 +10,7 @@ public record Product(
     string          Unit // unit of measure (pcs, kg, litres)
 )
 {
+    public string FullName => $"{Sku.ToLower()}_{Name.Replace(" ", "_").ToLower()}";
     public override string ToString()
         => $"[{Sku}] {Name,-26} {Category,-14} List: {ListPrice,8:C}";
 }

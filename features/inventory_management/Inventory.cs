@@ -69,11 +69,15 @@ public sealed class Inventory
     public Customer AddNewCustomer(
         string name,
         string email,
-        string mobile
+        string mobile,
+        CustomerTier tier = CustomerTier.Standard,
+        decimal discountRate = 0
     ) => _customers.Add(
         name: name,
         email: email,
-        mobile: mobile
+        mobile: mobile,
+        tier: tier,
+        discountRate: discountRate
     );
     public IEnumerable<Customer> Customers => _customers.All;
     public Customer FindCustomer(string customerId) => _customers.Find(customerId);
@@ -87,7 +91,7 @@ public sealed class Inventory
         => _ledger.LowStock(threshold);
 
     // ── purchase flow: Create → Receive → Cancel → Pay ───────────────────────────────────
-    public IReadOnlyList<PurchaseOrder> PurchasesOrders() => _purchases.All;
+    public IReadOnlyList<PurchaseOrder> PurchasesOrders => _purchases.All;
     public PurchaseOrder CreatePurchaseOrder(
         string supplierId,
         IEnumerable<(string ProductId, int Quantity, decimal UnitCost)> items
@@ -123,7 +127,7 @@ public sealed class Inventory
     public PurchaseOrder PayPurchaseOrder(string orderId) => _purchases.MarkPaid(orderId);
 
     // ── sales flow: Create → Cancel → Ship → Deliver → Pay → Return ───────────────────────
-    public IReadOnlyList<SalesOrder> SalesOrders() => _sales.All;
+    public IReadOnlyList<SalesOrder> SalesOrders => _sales.All;
 
     public SalesOrder CreateSaleOrder(
         string customerId,

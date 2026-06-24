@@ -24,8 +24,8 @@ public sealed class ProfitAnalyzer : IProfitAnalyzer
         var deliveredSales = sales
             .Where(s =>
                 s.CreatedAt >= startDate && s.CreatedAt <= endDate &&
-                s.Status is SaleStatus.Delivered or SaleStatus.Shipped)
-            .ToList();
+                s.Status is SaleStatus.Delivered or SaleStatus.Shipped
+            ).ToList();
 
         decimal totalCost = deliveredSales.Sum(s => s.TotalCost);
         decimal grossRevenue = deliveredSales.Sum(s => s.GrossRevenue);
@@ -38,13 +38,15 @@ public sealed class ProfitAnalyzer : IProfitAnalyzer
                 p.CreatedAt >= startDate &&
                 p.CreatedAt <= endDate &&
                 p.Status != PurchaseStatus.Cancelled
-            )
-            .Sum(p => p.ReceivedCost);
+            ).Sum(p => p.ReceivedCost);
 
         // simplified: GrossProfit as Net (no overhead model)
         decimal netProfit = grossProfit;
-        int unitsSold = (from sale in deliveredSales from item in sale.Items select item.QtyShipped)
-            .Sum();
+        int unitsSold = (
+            from sale in deliveredSales
+            from item in sale.Items
+            select item.QtyShipped
+        ).Sum();
         int ordersCount = deliveredSales.Count;
 
         // per-product breakdown
