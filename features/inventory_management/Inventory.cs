@@ -3,11 +3,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════════════
 
 using System.Text;
+using System.Text.Json.Serialization;
+using System.Collections.Frozen;
 
 namespace InventoryManagement;
 
 public sealed class Inventory
 {
+    private readonly string _dataDirectory = Path.Combine(Helpers.SameDirectory(), "data");
     private readonly string _name;
     private readonly IProductCatalog _catalog;
     private readonly ISupplierRegistry _suppliers;
@@ -18,6 +21,8 @@ public sealed class Inventory
     private readonly IProfitAnalyzer _analyzer;
 
     public string Name => _name;
+    [JsonIgnore]
+    public string FileName => Path.Combine(_dataDirectory, $"{_name.Replace(" ", "_").ToLower()}.json");
 
     public Inventory(string name)
     {
@@ -89,6 +94,8 @@ public sealed class Inventory
         => _ledger.AvgCost(pid);
     public IReadOnlyList<(string Pid, int Qty)> LowStockReport(int threshold = 10)
         => _ledger.LowStock(threshold);
+    public IReadOnlyList<StockMovement> StockMovements => _ledger.Movements;
+    public FrozenDictionary<string, Dictionary<string, List<CostLayer>>> CostsMap => _ledger.CostsMap;
 
     // ── purchase flow: Create → Receive → Cancel → Pay ───────────────────────────────────
     public IReadOnlyList<PurchaseOrder> PurchasesOrders => _purchases.All;
@@ -249,6 +256,7 @@ public sealed class Inventory
     }
 
     // ── inventory snapshot ──────────────────────────────────────────────────────────────
+    [JsonIgnore]
     public string InventorySnapshot
     {
         get
@@ -292,6 +300,7 @@ public sealed class Inventory
     }
 
     // ── inventory costs layers ──────────────────────────────────────────────────────────
+    [JsonIgnore]
     public string InventoryCostsMapString
     {
         get
@@ -332,6 +341,18 @@ public sealed class Inventory
 
             return sBuilder.ToString();
         }
+    }
+
+
+    // ── write data to JSON file ─────────────────────────────────────────────────────────
+    public async Task SaveToJsonFileAsync()
+    {
+        if(!Directory.Exists(_dataDirectory))
+            Directory.CreateDirectory(_dataDirectory);
+        await Helpers.WriteToJsonFileAsync(
+            filePath: Path.Combine(_dataDirectory, $"{FileName}"),
+            data: this
+        );
     }
 
 }

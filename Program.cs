@@ -2,7 +2,7 @@
 {
     static async Task Main()
     {
-        InventoryManagement.InventoryManager.Run();
+        await InventoryManagement.InventoryManager.Run();
         // await BankManagement.BankManager.Run();
         // await ShapesPainter.ShapesManager.Run();
         // await ResumesBuilder.ResumeManager.Run();

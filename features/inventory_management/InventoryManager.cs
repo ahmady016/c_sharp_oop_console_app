@@ -18,7 +18,7 @@ namespace InventoryManagement;
 public static class InventoryManager
 {
     private static readonly Faker _faker = new();
-    private static readonly Inventory _rayaTechStore = new("RayaTechStore");
+    private static readonly Inventory _rayaTechStore = new("Raya Tech Store");
     private static readonly Dictionary<string, Product?> _products = [];
     private static readonly Dictionary<string, Supplier?> _suppliers = [];
     private static readonly Dictionary<string, Customer?> _customers = [];
@@ -548,7 +548,7 @@ public static class InventoryManager
         );
     }
 
-    public static void Run()
+    public static async Task Run()
     {
         // ── START OF INVENTORY MANAGEMENT APP ──────────────────────────────────────────
         Helpers.PrintHeader("Start of Inventory Management App");
@@ -607,6 +607,11 @@ public static class InventoryManager
         // ─── ALL SALES ORDERS ─────────────────────────────────────────────────────────
         Helpers.PrintSection("12 — All sales orders");
         foreach (var so in _rayaTechStore.SalesOrders) Console.WriteLine($"  {so}");
+
+        // ─── WRITING INVENTORY TO JSON FILE ───────────────────────────────────────────
+        Helpers.PrintSection("13 — Writing Inventory To JSON File");
+        await _rayaTechStore.SaveToJsonFileAsync();
+        Helpers.PrintSuccess("Inventory data Written To JSON file Successfully...");
 
         // ── END OF APP ────────────────────────────────────────────────────────────────
         Helpers.PrintFooter("End of Inventory Management App");

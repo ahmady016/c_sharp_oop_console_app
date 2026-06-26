@@ -15,7 +15,7 @@ public static partial class Helpers
     // string of all digits
     private static readonly string _digits = "0123456789";
     // string array of common web colors names
-    private static readonly Color[] _webColors = [
+    public static readonly Color[] _webColors = [
         // Blues
         Color.CornflowerBlue, Color.SteelBlue, Color.DodgerBlue,
         Color.RoyalBlue, Color.DeepSkyBlue, Color.CadetBlue,
@@ -35,7 +35,7 @@ public static partial class Helpers
         Color.DimGray, Color.SlateGray, Color.DarkSlateGray,
     ];
     // json serialization global options
-    private static readonly JsonSerializerOptions _jsonOptions = new()
+    public static readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = true,
         PropertyNameCaseInsensitive = true,
@@ -51,11 +51,11 @@ public static partial class Helpers
     };
 
     // method to generate random digits only phone number with the given length
-    public static string GenerateDigitsOnlyPhoneNumber(int length = 11) =>
-        _faker.Phone.PhoneNumber(new string('#', length));
+    public static string GenerateDigitsOnlyPhoneNumber(int length = 11)
+        => _faker.Phone.PhoneNumber(new string('#', length));
     // method to generate random digits id with the given length
-    public static string GenerateDigitsOnlyId(int length = 8) =>
-        new([..from _ in Enumerable.Repeat('_', length) select PickOne(_digits)]);
+    public static string GenerateDigitsOnlyId(int length = 8)
+        => new([..from _ in Enumerable.Repeat('_', length) select PickOne(_digits)]);
 
     // method to generate random unique characters id with the given length
     // using Base62/Base36 Character Pool
@@ -99,10 +99,11 @@ public static partial class Helpers
     // so SameDirectory("books.json") always resolves to the directory of the caller file
     // regardless of where the code is executed (Base Directory, bin folder, etc.)
     // or from or the current working directory
-    public static string SameDirectory([CallerFilePath] string callerPath = "") =>
-        Path.GetDirectoryName(callerPath)!;
+    public static string SameDirectory([CallerFilePath] string callerPath = "")
+        => Path.GetDirectoryName(callerPath)!;
     public static string PathWithinSameDirectory(
-        string fileName, [CallerFilePath] string callerPath = ""
+        string fileName,
+        [CallerFilePath] string callerPath = ""
     ) => Path.Combine(Path.GetDirectoryName(callerPath)!, fileName);
 
     // method to get the value based on json value kind
