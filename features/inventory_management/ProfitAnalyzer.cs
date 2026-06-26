@@ -45,6 +45,7 @@ public sealed class ProfitAnalyzer : IProfitAnalyzer
         int unitsSold = (
             from sale in deliveredSales
             from item in sale.Items
+            where item.QtyShipped > 0
             select item.QtyShipped
         ).Sum();
         int ordersCount = deliveredSales.Count;
@@ -54,15 +55,15 @@ public sealed class ProfitAnalyzer : IProfitAnalyzer
             from sale in deliveredSales
             from item in sale.Items
             where item.QtyShipped > 0
-            group item by new { item.ProductId, item.Sku, item.ProductName } into itemGroup
-            let revenue = itemGroup.Sum(l => l.Revenue)
-            let cost = itemGroup.Sum(l => l.Cost)
+            group item by new ProductFullName(item.ProductId, item.Sku, item.ProductName) into itemGroup
+            let revenue = itemGroup.Sum(item => item.Revenue)
+            let cost = itemGroup.Sum(item => item.Cost)
             let gProfit = revenue - cost
-            orderby itemGroup descending
+            orderby gProfit descending
             select new ProductProfit(
                 Sku: itemGroup.Key.Sku,
-                Name: itemGroup.Key.ProductName,
-                UnitsSold: itemGroup.Sum(l => l.QtyShipped),
+                Name: itemGroup.Key.Name,
+                UnitsSold: itemGroup.Sum(item => item.QtyShipped),
                 Revenue: revenue,
                 Cost: cost,
                 GrossProfit: gProfit,
@@ -84,4 +85,5 @@ public sealed class ProfitAnalyzer : IProfitAnalyzer
             ProductsProfits: [..perProduct]
         );
     }
+
 }

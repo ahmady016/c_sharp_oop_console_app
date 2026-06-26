@@ -49,7 +49,7 @@ public sealed class SalesManager : ISalesManager
             ))
             .ToList();
         var newSaleOrder = new SalesOrder(
-            OrderId:      $"SO-{++_seq:D5}",
+            OrderId:      $"Sale-{++_seq:D8}",
             CustomerId:   customerId,
             CustomerName: customerName,
             Items:        saleItems,

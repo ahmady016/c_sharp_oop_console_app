@@ -30,6 +30,6 @@ public record PurchaseOrder(
     public decimal TotalCost => Items.Sum(l => l.Subtotal);
     public decimal ReceivedCost => Items.Sum(l => l.QtyReceived * l.UnitCost);
     public override string ToString() =>
-        $"[{OrderId}]  {SupplierName,-22}  {Status,-16}  " +
-        $"Total:{TotalCost,10:C}  Payment:{PaymentStatus}";
+        $"[{OrderId}]  {SupplierName,-28}  {Status,-16}  " +
+        $"Total:{TotalCost,14:C}  Payment:{PaymentStatus}";
 }

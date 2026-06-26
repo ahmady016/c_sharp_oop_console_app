@@ -1,5 +1,15 @@
 namespace InventoryManagement;
 
+public record ProductFullName(
+    string ProductId,
+    string Sku,
+    string Name
+)
+{
+    public string Value => $"{Sku.ToLower()}_{Name.Replace(" ", "_").ToLower()}";
+    public override string ToString() => Value;
+}
+
 public record Product(
     string          ProductId,
     string          Sku,

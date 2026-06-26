@@ -76,7 +76,7 @@ public static class InventoryManager
     {
         _products["laptopPro15"] = Add(
             "Adding Laptop Pro 15",
-            () => _rayaTechStore.AddNewProduct("ELECTRONICS-LP15", "Laptop Pro 15", "15\" 16GB 512GB", 1_499.99m, ProductCategory.Electronics)
+            () => _rayaTechStore.AddNewProduct("ELECTRONICS-LP15", "Laptop Pro 15", "15\" 16GB 512GB", 1_400m, ProductCategory.Electronics)
         );
         _products["wirelessMouse"] = Add(
             "Adding Wireless Mouse",
@@ -191,6 +191,22 @@ public static class InventoryManager
         }
     }
 
+    private static PurchaseOrder AllProductPurchaseOrder() => _rayaTechStore
+        .CreatePurchaseOrder(
+            supplierId: Helpers.PickOne(_suppliers.Values)!.SupplierId,
+            items: _products.Values.Select(product => (
+                product!.ProductId,
+                _faker.Random.Int(10, 120),
+                product!.ListPrice
+            )
+        ));
+    private static void ExecuteAllProductPurchaseCycle()
+    {
+        var allProductOrder = AllProductPurchaseOrder();
+        ReceivePurchaseOrder(allProductOrder);
+        PayPurchaseOrder(allProductOrder);
+        Console.WriteLine($"All Product Purchase Order -> {allProductOrder}");
+    }
     private static PurchaseOrder GetRandomPurchaseOrder() => _rayaTechStore
         .CreatePurchaseOrder(
             supplierId: Helpers.PickOne(_suppliers.Values)!.SupplierId,
@@ -222,15 +238,15 @@ public static class InventoryManager
             () => _rayaTechStore.PayPurchaseOrder(purchaseOrder.OrderId)
         );
     }
-    private static void ExecutePurchasesCycles(int count = 10)
+    private static void ExecuteRandomPurchasesCycles(int count = 10)
     {
         PurchaseOrder? purchaseOrder;
         for (int i = 0; i < count; i++)
         {
-            purchaseOrder = Add($"Creating Purchase Order #{i+1:00}", GetRandomPurchaseOrder);
+            purchaseOrder = Add($"Creating Random Purchase Order #{i+1:00}", GetRandomPurchaseOrder);
             Console.WriteLine(purchaseOrder);
             ReceivePurchaseOrder(purchaseOrder!);
-            if(Helpers.PickOne([true, false]))
+            if(Helpers.PickOne([true, false, true, true, false, true, false, true, true]))
                 PayPurchaseOrder(purchaseOrder!);
         }
     }
@@ -245,13 +261,20 @@ public static class InventoryManager
         }
 
         // SaleOrder01: Gold Customer buys 2 laptops + 3 mice (Gold 10% discount)
-        var saleOrder01 = Add($"SaleOrder01: {goldCustomer.Name} buys 2×Laptop + 3×Mouse", () =>
-            _rayaTechStore.CreateSaleOrder(
-                customerId: goldCustomer!.CustomerId,
-                items: [
-                    (_products["laptopPro15"]!.ProductId, 2, 1_499.99m),
-                    (_products["wirelessMouse"]!.ProductId, 3, 49.99m),
-            ])
+        var saleOrder01 = Add(
+            $"SaleOrder01: {goldCustomer.Name} buys 2×Laptop + 3×Mouse",
+            () => {
+                var laptopPro15 = _products["laptopPro15"]!;
+                decimal laptopPro15Price = laptopPro15.ListPrice + (laptopPro15.ListPrice * 0.2m);
+                var wirelessMouse = _products["wirelessMouse"]!;
+                decimal wirelessMousePrice = wirelessMouse.ListPrice + (wirelessMouse.ListPrice * 0.2m);
+                return _rayaTechStore.CreateSaleOrder(
+                    customerId: goldCustomer!.CustomerId,
+                    items: [
+                        (laptopPro15.ProductId, 2, laptopPro15Price),
+                        (wirelessMouse.ProductId, 3, wirelessMousePrice),
+                ]);
+            }
         );
         _salesOrders["saleOrder01"] = saleOrder01;
         Console.WriteLine($"  {saleOrder01}");
@@ -282,13 +305,20 @@ public static class InventoryManager
         }
 
         // SaleOrder02: Silver Customer buys 1 monitor + 2 keyboards (Silver 5% discount)
-        var saleOrder02 = Add($"SaleOrder02: {silverCustomer.Name} buys 1×Monitor + 2×Keyboard", () =>
-            _rayaTechStore.CreateSaleOrder(
-                customerId: silverCustomer!.CustomerId,
-                items: [
-                    (_products["monitor27"]!.ProductId, 1, 599.99m),
-                    (_products["mechKeyboard"]!.ProductId, 2, 129.99m),
-            ])
+        var saleOrder02 = Add(
+            $"SaleOrder02: {silverCustomer.Name} buys 1×Monitor + 2×Keyboard",
+            () => {
+                var monitor27 = _products["monitor27"]!;
+                decimal monitor27Price = monitor27.ListPrice + (monitor27.ListPrice * 0.15m);
+                var mechKeyboard = _products["mechKeyboard"]!;
+                decimal mechKeyboardPrice = mechKeyboard.ListPrice + (mechKeyboard.ListPrice * 0.15m);
+                return _rayaTechStore.CreateSaleOrder(
+                    customerId: silverCustomer!.CustomerId,
+                    items: [
+                        (monitor27.ProductId, 1, monitor27Price),
+                        (mechKeyboard.ProductId, 2, mechKeyboardPrice),
+                ]);
+            }
         );
         _salesOrders["saleOrder02"] = saleOrder02;
         Console.WriteLine($"  {saleOrder02}");
@@ -314,11 +344,17 @@ public static class InventoryManager
         }
 
         // SaleOrder03: Standard Customer buys 3 chairs (no discount)
-        var saleOrder03 = Add($"SaleOrder03: {standardCustomer.Name} buys 3×Chair", () =>
-            _rayaTechStore.CreateSaleOrder(
-                customerId: standardCustomer!.CustomerId,
-                items: [(_products["ergonomicChair"]!.ProductId, 3, 349.99m)]
-            ));
+        var saleOrder03 = Add(
+            $"SaleOrder03: {standardCustomer.Name} buys 3×Chair",
+            () => {
+                var ergonomicChair = _products["ergonomicChair"]!;
+                decimal ergonomicChairPrice = ergonomicChair.ListPrice + (ergonomicChair.ListPrice * 0.25m);
+                return _rayaTechStore.CreateSaleOrder(
+                    customerId: standardCustomer!.CustomerId,
+                    items: [(ergonomicChair.ProductId, 3, ergonomicChairPrice)]
+                );
+            }
+        );
         _salesOrders["saleOrder03"] = saleOrder03;
         Console.WriteLine($"  {saleOrder03}");
 
@@ -342,11 +378,17 @@ public static class InventoryManager
         }
         // SaleOrder04: bulk order 90 keyboards — (80 @ $60) + (10 @ $58)
         // for tests FIFO across two keyboard cost layers
-        var saleOrder04 = Add("SaleOrder04 Sara: 90×Keyboard (spans 2 cost layers)", () =>
-            _rayaTechStore.CreateSaleOrder(
-                customerId: customer!.CustomerId,
-                items: [(_products["mechKeyboard"]!.ProductId, 90, 129.99m)]
-            ));
+        var saleOrder04 = Add(
+            "SaleOrder04 Sara: 90×Keyboard (spans 2 cost layers)",
+            () => {
+                var mechKeyboard = _products["mechKeyboard"]!;
+                decimal mechKeyboardPrice = mechKeyboard.ListPrice + (mechKeyboard.ListPrice * 0.15m);
+                return _rayaTechStore.CreateSaleOrder(
+                    customerId: customer!.CustomerId,
+                    items: [(mechKeyboard.ProductId, 90, mechKeyboardPrice)]
+                );
+            }
+        );
         _salesOrders["saleOrder04"] = saleOrder04;
         Console.WriteLine($"  {saleOrder04}");
 
@@ -370,19 +412,20 @@ public static class InventoryManager
         }
 
         // SaleOrder05: cancelled order (should NOT affect profits)
-        var saleOrder05 = Add($"SaleOrder05: {customer.Name} buys 90×Keyboard", () =>
-            _rayaTechStore.CreateSaleOrder(
-                customerId: customer!.CustomerId,
-                items: [(_products["ryzen7"]!.ProductId, 5, _products["ryzen7"]!.ListPrice)]
-            ));
+        var saleOrder05 = Add(
+            $"SaleOrder05: {customer.Name} buys 90×Keyboard",
+            () =>
+            {
+                var ryzen7 = _products["ryzen7"]!;
+                decimal ryzen7Price = ryzen7.ListPrice + (ryzen7.ListPrice * 0.25m);
+                return _rayaTechStore.CreateSaleOrder(
+                    customerId: customer!.CustomerId,
+                    items: [(ryzen7.ProductId, 5, ryzen7Price)]
+                );
+            }
+        );
         _salesOrders["saleOrder05"] = saleOrder05;
         Console.WriteLine($"  {saleOrder05}");
-
-        Do("Ship + Deliver SaleOrder05", () =>
-        {
-            _rayaTechStore.ShipSaleOrder(saleOrder05!.OrderId);
-            _rayaTechStore.DeliverSaleOrder(saleOrder05!.OrderId);
-        });
 
         Do("Cancel SaleOrder05", () => _rayaTechStore.CancelSaleOrder(saleOrder05!.OrderId));
 
@@ -398,14 +441,22 @@ public static class InventoryManager
         }
 
         // SaleOrder06: return order after it was created, shipped and delivered
-        var saleOrder06 = Add($"SaleOrder06: {customer.Name} buys 1×Keyboard and 1xMouse", () =>
-            _rayaTechStore.CreateSaleOrder(
-                customerId: customer!.CustomerId,
-                items: [
-                    (_products["mechKeyboard"]!.ProductId, 1, _products["mechKeyboard"]!.ListPrice),
-                    (_products["wirelessMouse"]!.ProductId, 1, _products["wirelessMouse"]!.ListPrice)
-                ]
-            ));
+        var saleOrder06 = Add(
+            $"SaleOrder06: {customer.Name} buys 1×Keyboard and 1xMouse",
+            () =>
+            {
+                var mechKeyboard = _products["mechKeyboard"]!;
+                decimal mechKeyboardPrice = mechKeyboard.ListPrice + (mechKeyboard.ListPrice * 0.15m);
+                var wirelessMouse = _products["wirelessMouse"]!;
+                decimal wirelessMousePrice = wirelessMouse.ListPrice + (wirelessMouse.ListPrice * 0.15m);
+                return _rayaTechStore.CreateSaleOrder(
+                    customerId: customer!.CustomerId,
+                    items: [
+                        (mechKeyboard.ProductId, 1, mechKeyboardPrice),
+                        (wirelessMouse.ProductId, 1, wirelessMousePrice),
+                    ]);
+            }
+        );
         _salesOrders["saleOrder06"] = saleOrder06;
         Console.WriteLine($"  {saleOrder06}");
 
@@ -468,15 +519,20 @@ public static class InventoryManager
         );
 
         // Trying To Sell (Insufficient Stock)
-        var customer = Helpers.PickOne(_customers.Values);
-        var product02 = Helpers.PickOne(_products.Values);
-        int quantityOrdered = _rayaTechStore.StockLevel(product02!.ProductId) + 100;
+        var customer = Helpers.PickOne(_customers.Values)!;
+        var product02 = Helpers.PickOne(_products.Values)!;
+        int quantityOrdered = _rayaTechStore.StockLevel(product02.ProductId) + 100;
+        decimal product02Price = product02.ListPrice + (product02.ListPrice * 0.15m);
         Do(
             "Trying To Sell Out Of Stock -> Throws InsufficientStockException",
-            () => _rayaTechStore.CreateSaleOrder(
-                customerId: customer!.CustomerId,
-                items: [(product02!.ProductId, quantityOrdered, product02!.ListPrice)]
-            )
+            () => {
+                var saleOrder07 = _rayaTechStore.CreateSaleOrder(
+                    customerId: customer.CustomerId,
+                    items: [(product02.ProductId, quantityOrdered, product02Price)]
+                );
+                Console.WriteLine($"  {saleOrder07}");
+                _salesOrders["saleOrder07"] = saleOrder07;
+            }
         );
 
         // Trying To Ship Already-Cancelled saleOrder05
@@ -510,15 +566,20 @@ public static class InventoryManager
         GenerateSuppliers();
 
         // ── purchase orders cycle ─────────────────────────────────────────────────────
-        Helpers.PrintSection("4 — Execute Some Purchase Orders Cycle");
-        ExecutePurchasesCycles();
+        Helpers.PrintSection("4 — Execute Some Purchases Orders Cycles");
+        ExecuteAllProductPurchaseCycle();
+        ExecuteRandomPurchasesCycles();
 
         // ── SNAPSHOT BEFORE SALES ─────────────────────────────────────────────────────
-        Helpers.PrintSection("6 — Inventory Snapshot Before Any Sales");
+        Helpers.PrintSection("5 — Inventory Snapshot Before Any Sales");
         Console.WriteLine(_rayaTechStore.InventorySnapshot);
 
+        // ── COSTS MAP BEFORE SALES ────────────────────────────────────────────────────
+        Helpers.PrintSection("6 — Inventory Costs Map Before Any Sales");
+        Console.WriteLine(_rayaTechStore.InventoryCostsMapString);
+
         // ── SALES CYCLE ───────────────────────────────────────────────────────────────
-        Helpers.PrintSection("5 — Execute Some Sales Cycle");
+        Helpers.PrintSection("7 — Execute Some Sales Orders Cycles");
         ExecuteSaleCycleByGoldCustomer();
         ExecuteSaleCycleBySilverCustomer();
         ExecuteSaleCycleByStandardCustomer();
@@ -526,17 +587,18 @@ public static class InventoryManager
         ExecuteSaleCycleForCancelledOrder();
         ExecuteSaleCycleForReturnedOrder();
 
-        // ── EXCEPTIONS SCENARIOS ─────────────────────────────────────────────────────
-        Helpers.PrintSection("6 — Exceptions Scenarios");
-        RunExceptionsScenarios();
-
         // ── SNAPSHOT AFTER SALES ──────────────────────────────────────────────────────
-        Helpers.PrintSection("7 — Inventory Snapshot After Sales");
+        Helpers.PrintSection("8 — Inventory Snapshot After Sales");
         Console.WriteLine(_rayaTechStore.InventorySnapshot);
+
+        // ── EXCEPTIONS SCENARIOS ─────────────────────────────────────────────────────
+        Helpers.PrintSection("9 — Exceptions Scenarios");
+        RunExceptionsScenarios();
 
         // ── PROFIT REPORT ─────────────────────────────────────────────────────────────
         Helpers.PrintSection("10 — Full Profit & Loss Report");
-        Console.WriteLine(_rayaTechStore.ProfitReportString());
+        try { Console.WriteLine(_rayaTechStore.ProfitReportString()); }
+        catch(Exception error) { Helpers.PrintError(error.Message); }
 
         // ── ALL PURCHASES ORDERS ──────────────────────────────────────────────────────
         Helpers.PrintSection("11 — All purchase orders");

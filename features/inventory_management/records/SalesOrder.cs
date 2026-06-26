@@ -41,7 +41,8 @@ public record SalesOrder(
     public decimal ProfitMargin => GrossRevenue == 0 ? 0 : GrossProfit / GrossRevenue;
 
     public override string ToString() =>
-        $"[{OrderId}]  {CustomerName,-22}  {Status,-14}  " +
-        $"TotalCost: ({TotalCost,10:C})  GrossRevenue: ({GrossRevenue,10:C})  " +
-        $"GP: ({GrossProfit,10:C})  Margin: ({ProfitMargin:P1}) Payment: {PaymentStatus}";
+        $"[{OrderId, -13}]  {CustomerName,-14}  {Status,-12}  " +
+        $" {PaymentStatus,-10}   ({Items.Count,-2}) items [{string.Join(", ", Items.Select(i => i.ProductId))}] " +
+        $" TotalCost: ({TotalCost,10:C})  GrossRevenue: ({GrossRevenue,10:C})  " +
+        $" GrossProfit: ({GrossProfit,10:C})  ProfitMargin: ({ProfitMargin,8:P1})";
 }

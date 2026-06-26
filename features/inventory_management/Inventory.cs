@@ -114,7 +114,7 @@ public sealed class Inventory
     public PurchaseOrder ReceivePurchaseOrder(
         string orderId,
         IEnumerable<(string ProductId, int Qty)> receipts,
-        string warehouse = "WH-MAIN",
+        string warehouse = "WAREHOUSE-MAIN",
         string by = "system"
     ) => _purchases.Receive(
         orderId: orderId,
@@ -131,18 +131,25 @@ public sealed class Inventory
 
     public SalesOrder CreateSaleOrder(
         string customerId,
-        IEnumerable<(string ProductId, int Qty, decimal UnitPrice)> items
+        IEnumerable<(string ProductId, int Quantity, decimal UnitPrice)> items
     )
     {
         var existedCustomer = _customers.Find(customerId);
         var orderItems = items.Select(item =>
         {
             var existedProduct = _catalog.FindById(item.ProductId);
+            var availableStock = _ledger.ProductLevel(existedProduct.ProductId);
+            if (item.Quantity > availableStock)
+                throw new InsufficientStockException(
+                    existedProduct.ProductId,
+                    availableStock,
+                    item.Quantity
+                );
             return (
                 existedProduct.ProductId,
                 existedProduct.Name,
                 existedProduct.Sku,
-                item.Qty,
+                item.Quantity,
                 item.UnitPrice
             );
         });
@@ -156,7 +163,7 @@ public sealed class Inventory
     public SalesOrder CancelSaleOrder(string orderId) => _sales.Cancel(orderId);
     public SalesOrder ShipSaleOrder(
         string orderId,
-        string warehouse = "WH-MAIN",
+        string warehouse = "WAREHOUSE-MAIN",
         string by = "system"
     ) => _sales.Ship(
         orderId: orderId,
@@ -167,7 +174,7 @@ public sealed class Inventory
     public SalesOrder PaySaleOrder(string orderId) => _sales.MarkPaid(orderId);
     public SalesOrder ReturnSaleOrder(
         string orderId,
-        string warehouse = "WH-MAIN",
+        string warehouse = "WAREHOUSE-MAIN",
         string by = "system"
     ) => _sales.Refund(
         orderId: orderId,
@@ -222,8 +229,8 @@ public sealed class Inventory
         sBuilder.AppendLine();
 
         sBuilder.AppendLine(
-            $"  {"SKU",-14} {"Product",-24} {"Sold",5} " +
-            $"{"Revenue",10} {"COGS",10} {"GP",10} {"Margin",7}"
+            $"  {"SKU",-20} {"Product",-20} {"Sold",-4} " +
+            $"{"Revenue",10} {"COGS",10} {"GP",10} {"Margin",-5}"
         );
         sBuilder.AppendLine($"  {line}");
 
@@ -231,9 +238,9 @@ public sealed class Inventory
         {
             string flag = p.ProfitMargin < 0.15m ? " ⚠" : "";
             sBuilder.AppendLine(
-                $"  {p.Sku,-14} {p.Name,-24} {p.UnitsSold,5} | " +
+                $"  {p.Sku,-20} {p.Name,-20} {p.UnitsSold,-4} | " +
                 $"{p.Revenue,10:C} {p.Cost,10:C} {p.GrossProfit,10:C} | " +
-                $"{p.ProfitMargin,7:P1}{flag}"
+                $"{p.ProfitMargin,5:P1}{flag}"
             );
         }
         sBuilder.AppendLine(divider);
@@ -256,8 +263,8 @@ public sealed class Inventory
             sBuilder.AppendLine(divider);
 
             sBuilder.AppendLine(
-                $"  {"SKU",-14} {"Product",-26} {"Category",-14} " +
-                $"{"List":>8} {"AvgCost":>8} {"Stock":>6} {"Value":>10}"
+                $"  {"SKU",-18} {"Product",-30} {"Category",-14} " +
+                $"{"List Price":>10} {"AvgCost":>10} {"Stock":>8} {"Value":>10}"
             );
             sBuilder.AppendLine($"  {line}");
 
@@ -271,13 +278,56 @@ public sealed class Inventory
 
                 string flag = quantity == 0 ? " OUT" : quantity < 10 ? " LOW" : "";
                 sBuilder.AppendLine(
-                    $"  {product.Sku,-14} {product.Name,-26} {product.Category,-14} " +
-                    $"{product.ListPrice,8:C} {cost,8:C} {quantity,6}  {subTotal,10:C}{flag}"
+                    $"  {product.Sku,-18} {product.Name,-30} {product.Category,-14} " +
+                    $"{product.ListPrice,10:C} {cost,10:C} {quantity,8}  {subTotal,10:C}{flag}"
                 );
             }
 
             sBuilder.AppendLine($"  {line}");
             sBuilder.AppendLine($"  {"Total inventory value",-64} {totalCost,10:C}");
+            sBuilder.AppendLine(divider);
+
+            return sBuilder.ToString();
+        }
+    }
+
+    // ── inventory costs layers ──────────────────────────────────────────────────────────
+    public string InventoryCostsMapString
+    {
+        get
+        {
+            var sBuilder  = new StringBuilder();
+            string divider  = new('═', 80);
+            string line = new('─', 80);
+
+            sBuilder.AppendLine(divider);
+            sBuilder.AppendLine($"  {Name.ToUpper()} — INVENTORY COSTS LAYERS");
+            sBuilder.AppendLine($"  {DateTime.Now:dd MMM yyyy HH:mm}");
+            sBuilder.AppendLine(divider);
+
+            sBuilder.AppendLine(
+                $"  {"SKU",-18} {"Product",-30} {"Warehouse",-14} " +
+                $"{"Cost":>14} {"Quantity":>10} {"SubTotal":>10}"
+            );
+            sBuilder.AppendLine($"  {line}");
+
+            Product _product;
+            foreach (var (productId, warehousesMap) in _ledger.CostsMap)
+            {
+                _product = _catalog.FindById(productId);
+                foreach (var (warehouse, costs) in warehousesMap)
+                {
+                    foreach (var cost in costs)
+                    {
+                        decimal subTotal = cost.QuantityRemaining * cost.UnitCost;
+                        sBuilder.AppendLine(
+                            $"  {_product.Sku,-18} {productId,-30} {warehouse,-14} " +
+                            $"{cost.UnitCost,14:C} {cost.QuantityRemaining,10}  {subTotal,10:C}"
+                        );
+                    }
+                }
+            }
+            sBuilder.AppendLine($"  {line}");
             sBuilder.AppendLine(divider);
 
             return sBuilder.ToString();

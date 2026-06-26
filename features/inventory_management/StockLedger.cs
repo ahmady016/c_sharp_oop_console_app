@@ -1,7 +1,10 @@
+using System.Collections.Frozen;
+
 namespace InventoryManagement;
 
 public interface IStockLedger
 {
+    FrozenDictionary<string, Dictionary<string, List<CostLayer>>> CostsMap { get; }
     public IReadOnlyList<StockMovement> Movements { get; }
     int ProductLevel(string productId, string? warehouse = null);
     decimal StockIn(string productId, int quantity, decimal unitCost, string warehouse, string reference, string by);
@@ -18,6 +21,7 @@ public sealed class StockLedger : IStockLedger
     // productId → warehousesMap (warehouse → List<CostLayer>) (FIFO queue per warehouse)
     private readonly Dictionary<string, Dictionary<string, List<CostLayer>>> _costsMap = [];
     private readonly List<StockMovement> _movements = [];
+    public FrozenDictionary<string, Dictionary<string, List<CostLayer>>> CostsMap => _costsMap.ToFrozenDictionary();
     public IReadOnlyList<StockMovement> Movements => _movements.AsReadOnly();
 
     private void InitializeCostBuckets(string productId, string warehouse)
